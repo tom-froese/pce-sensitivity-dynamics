@@ -47,7 +47,7 @@ Most data files are included in this repository. The per-channel EEG time series
 | 62 per-channel EEG task CSVs (64 ch, 10 Hz, 60 s/trial) | 975 MB |
 | 62 per-channel EEG rest CSVs (64 ch, 10 Hz, 180 s/rest) | 651 MB |
 
-Zenodo DOI: *[to be added upon upload]*
+Zenodo DOI: [10.5281/zenodo.19425014](https://doi.org/10.5281/zenodo.19425014)
 
 To use the Zenodo data, download and extract into `data/EEG/` so that the per-channel CSV files sit alongside the existing MAT files.
 
