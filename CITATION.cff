@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this code or data, please cite the paper below."
+title: "Code and data for: Clock-free optimal stopping in social cognition"
+type: software
+license: MIT
+authors:
+  - family-names: Froese
+    given-names: Tom
+    orcid: "https://orcid.org/0000-0002-3052-0907"
+    affiliation: "Okinawa Institute of Science and Technology (OIST)"
+repository-code: "https://github.com/tom-froese/pce-sensitivity-dynamics"
+preferred-citation:
+  type: article
+  title: "Clock-free optimal stopping in social cognition: Stochastic sensitivity dynamics predict behavioral, neural, and perceptual transition timing"
+  authors:
+    - family-names: Froese
+      given-names: Tom
+  year: 2026
+  status: under-review

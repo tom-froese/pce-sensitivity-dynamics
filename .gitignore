@@ -1,0 +1,18 @@
+# MATLAB
+*.asv
+*.m~
+*.mex*
+*.mlappinstall
+*.mltbx
+
+# macOS
+.DS_Store
+._*
+
+# Temporary
+*.tmp
+*.bak
+
+# Uncompressed haptic data (use .gz version)
+data/Haptics/HapticFeedback.csv
+zenodo_README.md
