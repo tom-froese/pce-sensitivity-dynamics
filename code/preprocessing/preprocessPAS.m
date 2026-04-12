@@ -46,15 +46,18 @@ fprintf('  Participants per dyad:    %d\n', num_participants);
 fprintf('==========================================================\n\n');
 
 %% Discover experiment folders
-mainDir = pwd;
-folders = dir(fullfile(mainDir, 'pce*'));
+rawDir    = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'data', 'raw', 'Behavior');
+outputDir = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'data', 'preprocessed', 'PAS');
+if ~isfolder(outputDir); mkdir(outputDir); end
+
+folders = dir(fullfile(rawDir, 'pce*'));
 folders = folders([folders.isdir]);
 
 fprintf('Found %d experiment folders.\n\n', length(folders));
 
 if isempty(folders)
     error(['No pce* folders found in:\n  %s\n' ...
-           'Please run this script from the root data directory.'], mainDir);
+           'Download the raw behavioural data from Zenodo and place it in data/raw/Behavior/.'], rawDir);
 end
 
 %% Preallocate output storage
@@ -72,7 +75,7 @@ all_ratings          = [];   % For summary statistics
 %% Main extraction loop
 for f = 1:length(folders)
     folder_name = folders(f).name;
-    quest_path  = fullfile(mainDir, folder_name, 'questionnaires');
+    quest_path  = fullfile(rawDir, folder_name, 'questionnaires');
 
     % Extract dyad number from folder name (digits after 'pce')
     dyad_num_str = regexp(folder_name, 'pce(\d+)', 'tokens');
@@ -182,7 +185,7 @@ end
 pas_rows = pas_rows(sort_idx);
 
 %% Export CSV
-output_csv = 'PASRatings.csv';
+output_csv = fullfile(outputDir, 'PASRatings.csv');
 fprintf('Writing %s ...\n', output_csv);
 
 fid = fopen(output_csv, 'w');
@@ -312,7 +315,7 @@ meta.GeneratedBy = struct( ...
     'GenerationDateTime', timestamp_str);
 
 %% Write JSON
-output_json = 'PASRatings.json';
+output_json = fullfile(outputDir, 'PASRatings.json');
 json_str = jsonencode(meta);
 json_str = prettify_json(json_str);
 fid = fopen(output_json, 'w');

@@ -31,7 +31,13 @@ clearvars; close all; clc;
 %  1. LOAD GSP STATS (for tau)
 %  ========================================================================
 
-statsFile = fullfile(pwd, 'EEG', 'globalScalpPotential_stats.mat');
+scriptDir  = fileparts(mfilename('fullpath'));
+dataRoot   = fullfile(scriptDir, '..', '..', 'data');
+eegDir     = fullfile(dataRoot, 'preprocessed', 'EEG');
+clickDir   = fullfile(dataRoot, 'preprocessed', 'ClickTimes');
+rawBehDir  = fullfile(dataRoot, 'raw', 'Behavior');
+
+statsFile = fullfile(eegDir, 'globalScalpPotential_stats.mat');
 S = load(statsFile);
 
 tau    = S.grandTau;       % onset lag from grand P(1) fit
@@ -45,8 +51,7 @@ fprintf('Sensitivity peak: %.1f s (tau = %.1f s)\n', tPeak, tau);
 %  2. LOAD CLICK TIMES
 %  ========================================================================
 
-clickFile = fullfile(pwd, '..', 'PCE optimal waiting analysis', ...
-    'Repository', 'data', 'ClickTimes', 'ClickResponseTimes.csv');
+clickFile = fullfile(clickDir, 'ClickResponseTimes.csv');
 CT = readtable(clickFile);
 
 % Extract dyad number from DyadID (format XXYYYYYY)
@@ -62,8 +67,7 @@ fprintf('Loaded %d click entries from %d unique dyads\n', ...
 %  3. LOAD PAS DATA (from Behavior questionnaires)
 %  ========================================================================
 
-behavDir = fullfile(pwd, 'Behavior');
-allDyads = dir(behavDir);
+allDyads = dir(rawBehDir);
 allDyads = allDyads([allDyads.isdir]);
 
 % Build PAS table: DyadNum, ParticipantID, TrialNum (1-indexed), PAS
@@ -77,7 +81,7 @@ for i = 1:length(allDyads)
 
     for p = [1 2]
         fn = sprintf('pair_%02d_P%d_PAS_confidence_absence.csv', dN, p);
-        fp = fullfile(behavDir, allDyads(i).name, 'questionnaires', fn);
+        fp = fullfile(rawBehDir, allDyads(i).name, 'questionnaires', fn);
         if ~exist(fp, 'file'), continue; end
 
         tbl = readtable(fp, 'TextType', 'string');
@@ -232,7 +236,7 @@ grandSEM      = std(winPropPAS4, 0, 1, 'omitnan') ./ ...
 %  7. SAVE RESULTS
 %  ========================================================================
 
-save(fullfile(pwd, 'EEG', 'gsp_sensitivity_pas.mat'), ...
+save(fullfile(eegDir, 'gsp_sensitivity_pas.mat'), ...
     'propPAS4_early', 'propPAS4_late', 'meanPAS_early', 'meanPAS_late', ...
     'nPAS', 'tPeak', 'tau', ...
     'stats_prop', 'pval_prop', 'dz_prop', ...
@@ -430,7 +434,7 @@ lg2.FontSize = 9; lg2.Box = 'off';
 %  10. SAVE FIGURE
 %  ========================================================================
 
-outFile = fullfile(pwd, 'EEG', 'gsp_fig5_sensitivity_pas.png');
+outFile = fullfile(eegDir, 'gsp_fig5_sensitivity_pas.png');
 exportgraphics(fig, outFile, 'Resolution', 300);
 fprintf('\nSaved figure: %s\n', outFile);
 close(fig);

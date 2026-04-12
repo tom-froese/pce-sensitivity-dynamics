@@ -36,35 +36,39 @@ clearvars; close all; clc;
 %  1. LOAD GSP STATS (ROI peak times)
 %  ========================================================================
 
-S = load(fullfile(pwd, 'EEG', 'globalScalpPotential_stats.mat'));
-roiNames = S.roi.names;
-roiPeaks = S.roiGrandPeak;
-roiR2    = S.roiGrandR2;
-nROI     = S.nROI;
-tTaskSm  = S.tTaskSm;
+scriptDir  = fileparts(mfilename('fullpath'));
+dataRoot   = fullfile(scriptDir, '..', '..', 'data');
+eegDir     = fullfile(dataRoot, 'preprocessed', 'EEG');
+clickDir   = fullfile(dataRoot, 'preprocessed', 'ClickTimes');
+rawBehDir  = fullfile(dataRoot, 'raw', 'Behavior');
 
-globalPeak = S.grandPeak;
-globalTau  = S.grandTau;
+S = load(fullfile(eegDir, 'globalScalpPotential_stats.mat'));
+roiNames = S.roi.names;
+roiTroughs = S.roiGrandTrough;
+roiR2      = S.roiGrandR2;
+nROI       = S.nROI;
+tTaskSm    = S.tTaskSm;
+
+globalTrough = S.grandTrough;
+globalTau    = S.grandTau;
 T = 60;
 lambda = exp(1);
 
-fprintf('Global GSP peak: %.1f s (tau = %.1f s)\n', globalPeak, globalTau);
+fprintf('Global GSP trough: %.1f s (tau = %.1f s)\n', globalTrough, globalTau);
 for r = 1:nROI
-    fprintf('  %-18s peak = %5.1f s  (R2 = %.3f)\n', roiNames{r}, roiPeaks(r), roiR2(r));
+    fprintf('  %-18s peak = %5.1f s  (R2 = %.3f)\n', roiNames{r}, roiTroughs(r), roiR2(r));
 end
 
 %% ========================================================================
 %  2. LOAD AND MERGE CLICK TIMES + PAS
 %  ========================================================================
 
-clickFile = fullfile(pwd, '..', 'PCE optimal waiting analysis', ...
-    'Repository', 'data', 'ClickTimes', 'ClickResponseTimes.csv');
+clickFile = fullfile(clickDir, 'ClickResponseTimes.csv');
 CT = readtable(clickFile);
 CT.DyadNum = floor(CT.DyadID / 1e6);
 CT = CT(CT.DyadNum ~= 31, :);
 
-behavDir = fullfile(pwd, 'Behavior');
-allDyads = dir(behavDir);
+allDyads = dir(rawBehDir);
 allDyads = allDyads([allDyads.isdir]);
 
 pasRows = [];
@@ -75,7 +79,7 @@ for i = 1:length(allDyads)
     if dN == 31, continue; end
     for p = [1 2]
         fn = sprintf('pair_%02d_P%d_PAS_confidence_absence.csv', dN, p);
-        fp = fullfile(behavDir, allDyads(i).name, 'questionnaires', fn);
+        fp = fullfile(rawBehDir, allDyads(i).name, 'questionnaires', fn);
         if ~exist(fp, 'file'), continue; end
         tbl = readtable(fp, 'TextType', 'string');
         pasMask = tbl.question_id == "click_presence";
@@ -264,26 +268,26 @@ fprintf('\n');
 fprintf('%-18s  peak(s)  |diff from crossover|\n', 'ROI');
 fprintf('%-18s  ------   ----\n', '---');
 for r = 1:nROI
-    fprintf('%-18s  %5.1f    %.1f s\n', roiNames{r}, roiPeaks(r), ...
-        abs(roiPeaks(r) - tcross_trial));
+    fprintf('%-18s  %5.1f    %.1f s\n', roiNames{r}, roiTroughs(r), ...
+        abs(roiTroughs(r) - tcross_trial));
 end
 fprintf('\nClosest ROI to PAS crossover: ');
-[~, bestROI] = min(abs(roiPeaks - tcross_trial));
+[~, bestROI] = min(abs(roiTroughs - tcross_trial));
 fprintf('%s (peak = %.1f s, diff = %.1f s)\n', roiNames{bestROI}, ...
-    roiPeaks(bestROI), abs(roiPeaks(bestROI) - tcross_trial));
+    roiTroughs(bestROI), abs(roiTroughs(bestROI) - tcross_trial));
 
 %% ========================================================================
 %  8. SAVE RESULTS
 %  ========================================================================
 
-save(fullfile(pwd, 'EEG', 'gsp_pas_roi_crossover.mat'), ...
+save(fullfile(eegDir, 'gsp_pas_roi_crossover.mat'), ...
     'tcross_trial', 'b0_trial', 'b1_trial', ...
     'partCrossover', 'partBeta0', 'partBeta1', 'partN34', ...
     'grandCrossover_mean', 'grandCrossover_median', 'grandCrossover_SEM', ...
     'nValid', 'statsBeta1', 'pBeta1', 'pWilcox_beta1', ...
     'winCenters', 'winProp', 'grandProp', 'grandSEM', ...
-    'crossover_mw', 'roiPeaks', 'roiNames', 'roiR2', ...
-    'globalPeak', 'merged');
+    'crossover_mw', 'roiTroughs', 'roiNames', 'roiR2', ...
+    'globalTrough', 'merged');
 
 fprintf('\nSaved: EEG/gsp_pas_roi_crossover.mat\n');
 
@@ -342,10 +346,10 @@ text(grandCrossover_median + 1, 53, ...
     'FontSize', 9, 'FontWeight', 'bold', 'Color', [0.3 0.3 0.3]);
 
 % Mark fronto-central ROI peak
-xline(roiPeaks(3), ':', 'Color', roi_colors(3,:), 'LineWidth', 1.5, ...
+xline(roiTroughs(3), ':', 'Color', roi_colors(3,:), 'LineWidth', 1.5, ...
     'HandleVisibility', 'off');
-text(roiPeaks(3) - 1, 53, ...
-    sprintf('FC peak\n%.1f s', roiPeaks(3)), ...
+text(roiTroughs(3) - 1, 53, ...
+    sprintf('FC trough\n%.1f s', roiTroughs(3)), ...
     'FontSize', 9, 'FontWeight', 'bold', 'Color', roi_colors(3,:), ...
     'HorizontalAlignment', 'right');
 
@@ -381,11 +385,11 @@ yLevels = yl(2) * [0.95, 0.87, 0.95, 0.87, 0.79, 0.87, 0.95];
 % Short ROI labels
 roiShort = {'PF','F','FC','C','CP','P','O'};
 for r = 1:nROI
-    plot(roiPeaks(r), yLevels(r), 'v', 'MarkerSize', 9, ...
+    plot(roiTroughs(r), yLevels(r), 'v', 'MarkerSize', 9, ...
         'MarkerFaceColor', roi_colors(r,:), 'MarkerEdgeColor', 'k', ...
         'LineWidth', 0.6, 'HandleVisibility', 'off');
-    text(roiPeaks(r), yLevels(r) + yl(2)*0.05, ...
-        sprintf('%s\n%.1f', roiShort{r}, roiPeaks(r)), ...
+    text(roiTroughs(r), yLevels(r) + yl(2)*0.05, ...
+        sprintf('%s\n%.1f', roiShort{r}, roiTroughs(r)), ...
         'FontSize', 7.5, 'HorizontalAlignment', 'center', ...
         'Color', roi_colors(r,:), 'FontWeight', 'bold');
 end
@@ -413,14 +417,14 @@ roiPos = 1:nROI;
 
 % Bar chart of ROI peak times
 for r = 1:nROI
-    bar(r, roiPeaks(r), 0.6, 'FaceColor', roi_colors(r,:), ...
+    bar(r, roiTroughs(r), 0.6, 'FaceColor', roi_colors(r,:), ...
         'EdgeColor', 'k', 'LineWidth', 0.8, 'HandleVisibility', 'off');
 end
 
-% Global GSP peak line
-plot([0.3 nROI+0.7], [globalPeak globalPeak], '-', ...
+% Global GSP trough line
+plot([0.3 nROI+0.7], [globalTrough globalTrough], '-', ...
     'Color', col_global, 'LineWidth', 1.5, ...
-    'DisplayName', sprintf('Global GSP peak = %.1f s', globalPeak));
+    'DisplayName', sprintf('Global GSP trough = %.1f s', globalTrough));
 
 % PAS crossover lines
 plot([0.3 nROI+0.7], [tcross_trial tcross_trial], '--', ...
@@ -434,7 +438,7 @@ fill([0.3 nROI+0.7 nROI+0.7 0.3], [21.5 21.5 33.4 33.4], ...
 
 % R2 annotation on each bar
 for r = 1:nROI
-    text(r, roiPeaks(r) + 0.5, sprintf('.%03.0f', roiR2(r)*1000), ...
+    text(r, roiTroughs(r) + 0.5, sprintf('.%03.0f', roiR2(r)*1000), ...
         'HorizontalAlignment', 'center', 'FontSize', 8, 'Color', [0.3 0.3 0.3]);
 end
 
@@ -456,7 +460,7 @@ set(gca, 'TickDir', 'out', 'FontSize', font_main, 'Box', 'off');
 %  10. SAVE FIGURE
 %  ========================================================================
 
-outFile = fullfile(pwd, 'EEG', 'gsp_fig6_pas_roi_crossover.png');
+outFile = fullfile(eegDir, 'gsp_fig6_pas_roi_crossover.png');
 exportgraphics(fig, outFile, 'Resolution', 300);
 fprintf('\nSaved figure: %s\n', outFile);
 close(fig);

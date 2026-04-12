@@ -1,31 +1,28 @@
 %% plotFigure3_Perceptual.m
 % =========================================================================
-% PNAS Figure 3: Perceptual Evidence for Sensitivity Dynamics
+% PNAS Figure 3: Perceptual Evidence — Sensitivity Dynamics and PAS
 % =========================================================================
 %
-% Three-panel figure linking sensitivity dynamics to perceptual awareness:
+% Two-panel figure linking sensitivity dynamics to perceptual awareness:
 %
-%   Panel A — Sensitivity Schematic
-%     Mathematical relationship: the exponential decay P(0) = exp(-lambda*x)
-%     and its sensitivity to rate perturbations |dP(0)/dlambda| = x*exp(-lambda*x),
-%     which peaks at x = 1/lambda. At lambda = e, this peak occurs at
-%     x = 1/e — the optimal stopping point.
+%   Panel A — Sensitivity of R(x) to Rate Perturbations (Schematic)
+%     The reliability function R(x) = exp(-lambda*x) and its sensitivity
+%     dR/dlambda (normalized), which reaches its trough at x = 1/lambda.
+%     At lambda = e, this trough occurs at x = 1/e — the optimal stopping
+%     point. The left half is the "rejection phase" (low sensitivity,
+%     system robust); the right half is the "selection phase" (high
+%     sensitivity, system fragile).
 %
-%   Panel B — PAS Early vs. Late
-%     Within-participant comparison: proportion of PAS = 4 ("clear
-%     experience") for clicks before vs. after the sensitivity peak.
-%     Early clicks report clearer awareness (d_z = 0.37, p = 0.009).
-%
-%   Panel C — PAS Crossover + FC Peak + Per-Participant Histogram
-%     The PAS 4→3 crossover time (28.4 s from logistic regression)
-%     nearly coincides with the fronto-central GSP sensitivity peak
-%     (27.7 s). Histogram shows per-participant crossover distribution
-%     with ROI peak markers.
+%   Panel B — PAS Ratings Over Trial Time + Bootstrap Crossover CI
+%     Moving-window PAS proportions (all 4 levels) across trial time,
+%     showing how PAS 4 ("clear experience") declines from its initial
+%     dominance. The PAS 4->3 crossover time is estimated via bootstrap
+%     resampling of participants (median and 95% CI). ROI sensitivity
+%     trough times are overlaid as markers.
 %
 % INPUT:
-%   ../../data/EEG/globalScalpPotential_stats.mat
-%   ../../data/PAS/gsp_sensitivity_pas.mat
-%   ../../data/PAS/gsp_pas_roi_crossover.mat
+%   ../../data/preprocessed/EEG/globalScalpPotential_stats.mat
+%   ../../data/preprocessed/PAS/gsp_pas_roi_crossover.mat
 %
 % OUTPUT:
 %   ../../results/Figure3_Perceptual.png  (600 dpi)
@@ -40,273 +37,264 @@ clear; clc; close all;
 %  1. LOAD PRECOMPUTED RESULTS
 %  ========================================================================
 
-statsFile     = '../../data/EEG/globalScalpPotential_stats.mat';
-sensPasFile   = '../../data/PAS/gsp_sensitivity_pas.mat';
-crossoverFile = '../../data/PAS/gsp_pas_roi_crossover.mat';
+statsFile     = '../../data/preprocessed/EEG/globalScalpPotential_stats.mat';
+crossoverFile = '../../data/preprocessed/PAS/gsp_pas_roi_crossover.mat';
 
-for f = {statsFile, sensPasFile, crossoverFile}
+for f = {statsFile, crossoverFile}
     if ~isfile(f{1})
         error('Missing: %s\nSee README for instructions.', f{1});
     end
 end
 
-S  = load(statsFile);
-SP = load(sensPasFile);
-XO = load(crossoverFile);
+S    = load(statsFile);
+XOVR = load(crossoverFile);
 
+tau    = S.grandTau;
+T      = 60;
 lambda = exp(1);
-T = 60;
+tPeak  = tau + (T - tau) / lambda;
 
 fprintf('Loaded precomputed results:\n');
-fprintf('  GSP: N=%d, grand R^2=%.3f, FC peak=%.1f s\n', ...
-    S.nPart, S.grandR2, S.roiGrandPeak(3));
-fprintf('  PAS early/late: N=%d, d_z=%.3f, p=%.4f\n', ...
-    SP.nPAS, SP.dz_prop, SP.pval_prop);
-fprintf('  PAS crossover: %.1f s (trial-level), %.1f s (within-part median)\n', ...
-    XO.tcross_trial, XO.grandCrossover_median);
+fprintf('  GSP: N=%d, grand R^2=%.3f\n', S.nPart, S.grandR2);
 
 %% ========================================================================
 %  2. STYLING
 %  ========================================================================
 
-col_decay = [0.50 0.50 0.50];   % Grey for P(0)
-col_sens  = [0.85 0.20 0.10];   % Red for sensitivity
-col_early = [0.15 0.45 0.75];   % Blue
-col_late  = [0.85 0.55 0.10];   % Orange
-col_fc    = [0.30 0.73 0.84];   % Fronto-central colour (matches Fig 2)
+col_decay = [0.50 0.50 0.50];    % Grey for R(x)
+col_sens  = [0.85 0.20 0.10];    % Red for sensitivity curve
+col_early = [0.15 0.45 0.75];    % Blue
+col_late  = [0.85 0.55 0.10];    % Orange
 
-roi_colors = [
-    0.90 0.29 0.21;   % Prefrontal
-    0.95 0.61 0.50;   % Frontal
-    0.30 0.73 0.84;   % Fronto-Central
-    0.00 0.63 0.53;   % Central
-    0.24 0.33 0.53;   % Centro-Parietal
-    0.52 0.57 0.70;   % Parietal
-    0.49 0.38 0.28;   % Occipital
-];
+col_pas = [0.65 0.65 0.65;       % PAS 1 grey
+           0.93 0.69 0.13;       % PAS 2 amber
+           0.85 0.33 0.10;       % PAS 3 orange
+           0.00 0.00 0.00];      % PAS 4 black
+lw_pas  = [1.5 1.5 2.0 2.5];
+
+% ROI gradient (same as Figure 2)
+nROI = S.nROI;
+baseColor  = [0.10 0.35 0.65];
+lightColor = [0.70 0.85 0.95];
+roi_colors = zeros(nROI, 3);
+for r = 1:nROI
+    frac = (r - 1) / (nROI - 1);
+    roi_colors(r,:) = baseColor * (1 - frac) + lightColor * frac;
+end
 roiShort = {'PF','F','FC','C','CP','P','O'};
 
-font_sz       = 9;
-font_sz_label = 10;
-font_sz_title = 11;
-font_sz_annot = 8;
-font_sz_panel = 16;
+font_main  = 11;
+font_label = 12;
+font_title = 13;
 
 %% ========================================================================
-%  3. CREATE FIGURE — 1 row on top, 2 columns on bottom
+%  3. BOOTSTRAP CI FOR PAS 4/3 CROSSOVER
+%  ========================================================================
+
+winCenters = XOVR.winCenters;
+nWin       = length(winCenters);
+winProp3   = XOVR.winProp{3};    % nPart x nWin
+winProp4   = XOVR.winProp{4};    % nPart x nWin
+nPall      = size(winProp3, 1);
+
+tcross_obs = XOVR.tcross_trial;
+smKernel   = ones(1,3)/3;
+
+nBoot = 10000;
+rng(42);
+bootCross = nan(nBoot, 1);
+minCrossTime = 15;
+minIdx = find(winCenters >= minCrossTime, 1);
+
+for bi = 1:nBoot
+    idx = randi(nPall, nPall, 1);
+    gP3 = mean(winProp3(idx,:), 1, 'omitnan');
+    gP4 = mean(winProp4(idx,:), 1, 'omitnan');
+    diff43 = gP4 - gP3;
+    diff43sm = conv(diff43, smKernel, 'same');
+    for ci = minIdx:nWin-1
+        if diff43sm(ci) > 0 && diff43sm(ci+1) <= 0
+            x1 = winCenters(ci); x2 = winCenters(ci+1);
+            y1 = diff43sm(ci); y2 = diff43sm(ci+1);
+            bootCross(bi) = x1 + (0 - y1) * (x2 - x1) / (y2 - y1);
+            break;
+        end
+    end
+end
+
+validBoot  = ~isnan(bootCross);
+bootCI     = prctile(bootCross(validBoot), [2.5 97.5]);
+bootMedian = median(bootCross(validBoot));
+
+fprintf('\nBootstrap crossover (N=%d valid / %d):\n', sum(validBoot), nBoot);
+fprintf('  Median = %.1f s,  95%% CI = [%.1f, %.1f] s\n', ...
+    bootMedian, bootCI(1), bootCI(2));
+
+%% ========================================================================
+%  4. CREATE FIGURE — 2 rows
 %  ========================================================================
 
 fprintf('Creating Figure 3 ...\n');
 
-fig_w = 7.09;  fig_h = 5.8;
-fig = figure('Units', 'inches', 'Position', [0.5 0.5 fig_w fig_h], ...
-    'Color', 'w', 'PaperUnits', 'inches', ...
-    'PaperSize', [fig_w fig_h], 'PaperPosition', [0 0 fig_w fig_h]);
+fig = figure('Units', 'inches', 'Position', [0.5 0.5 7.5 6], 'Color', 'w', ...
+    'PaperUnits', 'inches', 'PaperSize', [7.5 6], 'PaperPosition', [0 0 7.5 6]);
 
-%% ---- Panel A: Sensitivity schematic (full width, top) ------------------
+%% ---- Panel A: Reliability R(x) and its sensitivity ---------------------
 
-ax_a = axes('Position', [0.08 0.64 0.88 0.30]);
+ax_a = subplot(2,1,1);
 hold on;
 
-x = linspace(0, 1.5, 300);
-P0   = exp(-lambda * x);
-sens = x .* exp(-lambda * x);
-sens_norm = sens / max(sens);
+x = linspace(0, 1.0, 300);
+Rx         = exp(-lambda * x);             % Reliability function
+dRdlam     = -x .* exp(-lambda * x);       % dR/dlambda (negative)
+dRdlam_norm = dRdlam / abs(min(dRdlam));   % Normalize so trough = -1
+xTrough_norm = 1/lambda;
 
+% Shade early/late FIRST so curves draw on top
+yyaxis right;
+ylim([-1.25 0.05]);
+yl = ylim;
+fill([0 xTrough_norm xTrough_norm 0], [yl(1) yl(1) yl(2) yl(2)], ...
+    col_early, 'FaceAlpha', 0.06, 'EdgeColor', 'none', ...
+    'HandleVisibility', 'off');
+fill([xTrough_norm x(end) x(end) xTrough_norm], [yl(1) yl(1) yl(2) yl(2)], ...
+    col_late, 'FaceAlpha', 0.06, 'EdgeColor', 'none', ...
+    'HandleVisibility', 'off');
+
+text(0.08, 0.85, 'Rejection phase', ...
+    'FontSize', 9, 'Color', col_early, 'FontAngle', 'italic', ...
+    'Units', 'normalized');
+text(0.58, 0.85, 'Selection phase', ...
+    'FontSize', 9, 'Color', col_late, 'FontAngle', 'italic', ...
+    'Units', 'normalized');
+
+% Plot curves on top of shading
 yyaxis left;
-plot(x, P0, '-', 'Color', col_decay, 'LineWidth', 2.5);
-ylabel('P(0) = e^{-\lambda x}', 'FontSize', font_sz_label, 'Color', col_decay);
+plot(x, Rx, '-', 'Color', col_decay, 'LineWidth', 2.5);
+ylabel('R(x) = e^{-\lambda x}', 'FontSize', font_label, 'Color', col_decay);
 set(gca, 'YColor', col_decay);
 ylim([-0.05 1.05]);
 
 yyaxis right;
-plot(x, sens_norm, '-', 'Color', col_sens, 'LineWidth', 2.5);
-ylabel('|\partial P(0) / \partial\lambda|  (normalized)', ...
-    'FontSize', font_sz_label, 'Color', col_sens);
+plot(x, dRdlam_norm, '-', 'Color', col_sens, 'LineWidth', 3);
+ylabel({'\partial R / \partial\lambda', '(normalized)'}, ...
+    'FontSize', font_label, 'Color', col_sens);
 set(gca, 'YColor', col_sens);
-ylim([-0.05 1.25]);
+ylim([-1.25 0.05]);
+set(gca, 'Color', 'none');
+ax_a.Layer = 'top';
 
-% Mark peak
-xPeak = 1/lambda;
-plot(xPeak, 1.0, 'v', 'MarkerSize', 9, 'MarkerFaceColor', col_sens, ...
+% Trough marker
+plot(xTrough_norm, -1.0, '^', 'MarkerSize', 10, 'MarkerFaceColor', col_sens, ...
     'MarkerEdgeColor', 'k', 'LineWidth', 0.5);
-text(xPeak + 0.03, 1.10, 'x = 1/e', ...
-    'FontSize', font_sz_annot+1, 'FontWeight', 'bold', 'Color', col_sens);
+text(xTrough_norm + 0.03, -1.08, 'x = 1/\lambda = 1/e', ...
+    'FontSize', 10, 'FontWeight', 'bold', 'Color', col_sens);
 
-% Shade early/late regions
-yl = ylim;
-fill([0 xPeak xPeak 0], [yl(1) yl(1) yl(2) yl(2)], ...
-    col_early, 'FaceAlpha', 0.05, 'EdgeColor', 'none');
-fill([xPeak x(end) x(end) xPeak], [yl(1) yl(1) yl(2) yl(2)], ...
-    col_late, 'FaceAlpha', 0.05, 'EdgeColor', 'none');
-
-text(0.12, 0.80, {'Robust', '(low sensitivity)'}, ...
-    'FontSize', font_sz_annot, 'Color', col_early, 'FontAngle', 'italic', ...
-    'Units', 'normalized');
-text(0.65, 0.80, {'Sensitive', '(high sensitivity)'}, ...
-    'FontSize', font_sz_annot, 'Color', col_late, 'FontAngle', 'italic', ...
-    'Units', 'normalized');
+% Re-draw sensitivity curve on top
+plot(x, dRdlam_norm, '-', 'Color', col_sens, 'LineWidth', 2.5, ...
+    'HandleVisibility', 'off');
 
 hold off;
-xlabel('Normalized time  x = (t - \tau) / (T - \tau)', 'FontSize', font_sz_label);
-title('Sensitivity of P(0) to rate perturbations', ...
-    'FontSize', font_sz_title, 'FontWeight', 'bold');
-set(gca, 'TickDir', 'out', 'FontSize', font_sz, 'Box', 'off');
-xlim([0 1.2]);
+xlabel('Normalized time  x = (t - \tau) / (T - \tau)', 'FontSize', font_label);
+title('(A)  Sensitivity of reliability R(x) to rate perturbations', ...
+    'FontSize', font_title, 'FontWeight', 'bold');
+set(gca, 'TickDir', 'out', 'FontSize', font_main, 'Box', 'off');
+xlim([0 1.0]);
 
-text(-0.06, 1.08, 'A', 'Units', 'normalized', ...
-    'FontSize', font_sz_panel, 'FontWeight', 'bold');
+lg = legend('R(x): reliability of metastable state', ...
+            '\partialR/\partial\lambda: rate sensitivity', ...
+            'Location', 'southeast');
+lg.FontSize = 9; lg.Box = 'on';
+lg.Color = 'w';
+lg.EdgeColor = [0.7 0.7 0.7];
 
-%% ---- Panel B: PAS early vs late (bottom left) -------------------------
+%% ---- Panel B: Moving-window PAS + bootstrap CI + ROI trough markers ----
 
-ax_b = axes('Position', [0.08 0.10 0.38 0.42]);
+ax_b = subplot(2,1,2);
 hold on;
 
-barData = [mean(SP.propPAS4_early), mean(SP.propPAS4_late)];
-barSEM  = [std(SP.propPAS4_early)/sqrt(SP.nPAS), ...
-           std(SP.propPAS4_late)/sqrt(SP.nPAS)];
-
-b = bar([1 2], barData, 0.55);
-b.FaceColor = 'flat';
-b.CData(1,:) = col_early;
-b.CData(2,:) = col_late;
-b.EdgeColor  = 'k';
-b.LineWidth  = 0.8;
-
-errorbar([1 2], barData, barSEM, 'k', 'LineStyle', 'none', ...
-    'LineWidth', 1.5, 'CapSize', 8);
-
-% Individual participants (jittered)
-rng(42);
-jE = 0.12 * (rand(SP.nPAS,1) - 0.5);
-jL = 0.12 * (rand(SP.nPAS,1) - 0.5);
-scatter(1 + jE, SP.propPAS4_early, 10, col_early, 'filled', ...
-    'MarkerFaceAlpha', 0.25);
-scatter(2 + jL, SP.propPAS4_late, 10, col_late, 'filled', ...
-    'MarkerFaceAlpha', 0.25);
-
-% Paired lines
-for i = 1:SP.nPAS
-    plot([1+jE(i), 2+jL(i)], [SP.propPAS4_early(i), SP.propPAS4_late(i)], ...
-        '-', 'Color', [0.5 0.5 0.5 0.10], 'LineWidth', 0.3);
+% PAS levels
+pasHandles = gobjects(4,1);
+for lv = 1:4
+    validW = ~isnan(XOVR.grandProp(lv,:));
+    xw = winCenters(validW);
+    yw = XOVR.grandProp(lv, validW) * 100;
+    ew = XOVR.grandSEM(lv, validW) * 100;
+    fill([xw, fliplr(xw)], [yw+ew, fliplr(yw-ew)], ...
+        col_pas(lv,:), 'FaceAlpha', 0.10, 'EdgeColor', 'none', ...
+        'HandleVisibility', 'off');
+    pasHandles(lv) = plot(xw, yw, '-', 'Color', col_pas(lv,:), ...
+        'LineWidth', lw_pas(lv), ...
+        'DisplayName', sprintf('PAS %d', lv));
 end
 
-% Significance bracket
-yBracket = max(barData) + max(barSEM) + 0.04;
-plot([1 1 2 2], [yBracket-0.005 yBracket yBracket yBracket-0.005], ...
-    'k-', 'LineWidth', 1);
-if SP.pval_prop < 0.01
-    sigStr = '**';
-elseif SP.pval_prop < 0.05
-    sigStr = '*';
-else
-    sigStr = 'n.s.';
-end
-text(1.5, yBracket + 0.005, sigStr, 'HorizontalAlignment', 'center', ...
-    'FontSize', 14, 'FontWeight', 'bold');
+% Bootstrap CI shading
+ciPatch = fill([bootCI(1) bootCI(2) bootCI(2) bootCI(1)], ...
+    [0 0 60 60], ...
+    [0.7 0.3 0.3], 'FaceAlpha', 0.10, 'EdgeColor', 'none', ...
+    'DisplayName', sprintf('Crossover 95%% CI [%.1f, %.1f] s', bootCI(1), bootCI(2)));
 
-text(1.5, yBracket + 0.06, ...
-    sprintf('p = %.3f, d_z = %.2f', SP.pval_prop, SP.dz_prop), ...
-    'HorizontalAlignment', 'center', 'FontSize', font_sz_annot);
+% Crossover median line
+crossLineH = plot([bootMedian bootMedian], [0 60], '--', ...
+    'Color', [0.5 0.1 0.1], 'LineWidth', 2, ...
+    'DisplayName', sprintf('PAS 4/3 crossover = %.1f s', bootMedian));
+text(bootMedian + 1, 55, sprintf('%.1f s', bootMedian), ...
+    'FontSize', 9, 'FontWeight', 'bold', 'Color', [0.5 0.1 0.1]);
 
-hold off;
-set(gca, 'XTick', [1 2], 'XTickLabel', {'Early', 'Late'});
-ylabel('Proportion PAS = 4', 'FontSize', font_sz_label);
-title(sprintf('PAS clarity (N = %d)', SP.nPAS), ...
-    'FontSize', font_sz_title, 'FontWeight', 'bold');
-ylim([0 yBracket + 0.12]);
-set(gca, 'TickDir', 'out', 'FontSize', font_sz, 'Box', 'off');
+% ROI trough markers at top
+roiTroughs = XOVR.roiTroughs;
+yTop     = 57;
+yLevels  = [yTop, yTop-3, yTop, yTop-3, yTop-6, yTop-3, yTop];
 
-text(-0.18, 1.08, 'B', 'Units', 'normalized', ...
-    'FontSize', font_sz_panel, 'FontWeight', 'bold');
-
-%% ---- Panel C: Crossover histogram + ROI peaks (bottom right) ----------
-
-ax_c = axes('Position', [0.57 0.10 0.40 0.42]);
-hold on;
-
-validXover = ~isnan(XO.partCrossover);
-validCross = XO.partCrossover(validXover);
-
-histogram(validCross, 12, 'FaceColor', [0.7 0.7 0.7], 'EdgeColor', 'w', ...
-    'FaceAlpha', 0.6);
-
-yl = ylim;
-yl(2) = yl(2) * 1.3;
-ylim(yl);
-
-% Within-participant median crossover
-plot([XO.grandCrossover_median XO.grandCrossover_median], yl, '-', ...
-    'Color', 'k', 'LineWidth', 2);
-text(XO.grandCrossover_median + 0.5, yl(2)*0.92, ...
-    sprintf('PAS\n%.0f s', XO.grandCrossover_median), ...
-    'FontSize', font_sz_annot, 'FontWeight', 'bold', 'Color', 'k');
-
-% Fronto-central ROI peak (highlighted)
-fcPeak = S.roiGrandPeak(3);
-plot([fcPeak fcPeak], yl, '--', 'Color', col_fc, 'LineWidth', 2);
-text(fcPeak - 0.5, yl(2)*0.75, ...
-    sprintf('FC\n%.1f s', fcPeak), ...
-    'FontSize', font_sz_annot, 'FontWeight', 'bold', 'Color', col_fc, ...
-    'HorizontalAlignment', 'right');
-
-% All ROI peaks as markers at top
-yMarker = yl(2) * 0.98;
-for r = 1:S.nROI
-    plot(S.roiGrandPeak(r), yMarker, 'v', 'MarkerSize', 7, ...
+for r = 1:nROI
+    plot(roiTroughs(r), yLevels(r), 'v', 'MarkerSize', 8, ...
         'MarkerFaceColor', roi_colors(r,:), 'MarkerEdgeColor', 'k', ...
-        'LineWidth', 0.4);
+        'LineWidth', 0.6, 'HandleVisibility', 'off');
+    text(roiTroughs(r), yLevels(r) + 2.0, roiShort{r}, ...
+        'FontSize', 7, 'HorizontalAlignment', 'center', ...
+        'Color', roi_colors(r,:), 'FontWeight', 'bold');
 end
 
-% Difference annotation
-diffTime = abs(fcPeak - XO.grandCrossover_median);
-text(0.95, 0.50, sprintf('\\Delta = %.1f s', diffTime), ...
-    'Units', 'normalized', 'FontSize', font_sz_annot+1, ...
-    'HorizontalAlignment', 'right', 'FontWeight', 'bold', ...
-    'Color', [0.3 0.3 0.3]);
+% Dummy for ROI legend entry
+roiDummy = plot(NaN, NaN, 'kv', 'MarkerSize', 7, ...
+    'MarkerFaceColor', [0.4 0.6 0.8], ...
+    'DisplayName', 'ROI sensitivity troughs');
 
 hold off;
-xlim([0 T]);
-xlabel('PAS 4/3 crossover time (s)', 'FontSize', font_sz_label);
-ylabel('Count', 'FontSize', font_sz_label);
-title(sprintf('PAS crossover (N = %d)', XO.nValid), ...
-    'FontSize', font_sz_title, 'FontWeight', 'bold');
-set(gca, 'TickDir', 'out', 'FontSize', font_sz, 'Box', 'off');
+xlim([0 T]); ylim([0 62]);
+xlabel('Trial time (s)', 'FontSize', font_label);
+ylabel('Proportion of clicks (%)', 'FontSize', font_label);
+title('(B)  PAS ratings over trial time with crossover CI and ROI troughs', ...
+    'FontSize', font_title, 'FontWeight', 'bold');
 
-text(-0.15, 1.08, 'C', 'Units', 'normalized', ...
-    'FontSize', font_sz_panel, 'FontWeight', 'bold');
+lgd = legend([pasHandles; crossLineH; ciPatch; roiDummy], ...
+    'Location', 'southeast', 'Box', 'on', 'FontSize', 8, ...
+    'NumColumns', 2);
+set(lgd, 'Color', 'w', 'EdgeColor', [0.7 0.7 0.7]);
+set(gca, 'TickDir', 'out', 'FontSize', font_main, 'Box', 'off');
 
 %% ========================================================================
-%  4. SAVE
+%  5. SAVE
 %  ========================================================================
 
 outFile = '../../results/Figure3_Perceptual.png';
-print(fig, outFile, '-dpng', '-r600');
+exportgraphics(fig, outFile, 'Resolution', 600);
 fprintf('  Saved: %s (600 dpi)\n', outFile);
 
 %% ========================================================================
-%  5. SUMMARY
+%  6. SUMMARY
 %  ========================================================================
 
 fprintf('\n==========================================================\n');
-fprintf('  FIGURE 3 SUMMARY\n');
+fprintf('  FIGURE 3 SUMMARY (Perceptual Evidence)\n');
 fprintf('==========================================================\n');
 fprintf('  Panel A — Sensitivity Schematic\n');
-fprintf('    P(0) = exp(-lambda*x), peak at x = 1/e\n');
-fprintf('    lambda = e (fixed)\n');
+fprintf('    R(x) = exp(-lambda*x), trough at x = 1/e\n');
+fprintf('    lambda = e (fixed, not fitted)\n');
 fprintf('  --\n');
-fprintf('  Panel B — PAS Early vs. Late\n');
-fprintf('    N participants:     %d\n', SP.nPAS);
-fprintf('    Prop(PAS=4) early:  %.3f\n', mean(SP.propPAS4_early));
-fprintf('    Prop(PAS=4) late:   %.3f\n', mean(SP.propPAS4_late));
-fprintf('    t(%d) = %.2f, p = %.4f, d_z = %.3f\n', ...
-        SP.nPAS-1, SP.stats_prop.tstat, SP.pval_prop, SP.dz_prop);
-fprintf('  --\n');
-fprintf('  Panel C — PAS Crossover + FC Peak\n');
-fprintf('    PAS crossover (within-part median): %.1f s\n', XO.grandCrossover_median);
-fprintf('    PAS crossover (trial-level):        %.1f s\n', XO.tcross_trial);
-fprintf('    FC sensitivity peak:                %.1f s\n', fcPeak);
-fprintf('    Difference:                         %.1f s\n', diffTime);
-fprintf('    N valid crossovers:                 %d\n', XO.nValid);
+fprintf('  Panel B — PAS Dynamics + Bootstrap Crossover CI\n');
+fprintf('    Bootstrap median crossover: %.1f s\n', bootMedian);
+fprintf('    95%% CI: [%.1f, %.1f] s\n', bootCI(1), bootCI(2));
+fprintf('    Valid bootstrap samples: %d / %d\n', sum(validBoot), nBoot);
 fprintf('==========================================================\n');
 fprintf('Done.\n');

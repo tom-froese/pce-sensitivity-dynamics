@@ -57,15 +57,18 @@ fprintf('  Target sampling rate:     %d Hz\n', fs_target);
 fprintf('==========================================================\n\n');
 
 %% Discover experiment folders
-mainDir = pwd;
-folders = dir(fullfile(mainDir, 'pce*'));
+rawDir    = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'data', 'raw', 'Behavior');
+outputDir = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'data', 'preprocessed', 'Haptics');
+if ~isfolder(outputDir); mkdir(outputDir); end
+
+folders = dir(fullfile(rawDir, 'pce*'));
 folders = folders([folders.isdir]);
 
 fprintf('Found %d experiment folders.\n\n', length(folders));
 
 if isempty(folders)
     error(['No pce* folders found in:\n  %s\n' ...
-           'Please run this script from the root data directory.'], mainDir);
+           'Download the raw behavioural data from Zenodo and place it in data/raw/Behavior/.'], rawDir);
 end
 
 %% Preallocate
@@ -81,7 +84,7 @@ haptic_means_all      = [];   % track per-segment mean for summary
 %% Main loop
 for f = 1:length(folders)
     folder_name = folders(f).name;
-    trials_path = fullfile(mainDir, folder_name, 'trials');
+    trials_path = fullfile(rawDir, folder_name, 'trials');
 
     % === Extract pair number (XX in pceXXYYMMDD) ===
     dyad_num_str = regexp(folder_name, 'pce(\d+)', 'tokens');
@@ -203,7 +206,7 @@ end
 sensation_rows = sensation_rows(sort_idx);
 
 %% Export CSV
-output_csv = 'HapticFeedback.csv';
+output_csv = fullfile(outputDir, 'HapticFeedback.csv');
 fprintf('Writing %s ...\n', output_csv);
 
 fid = fopen(output_csv, 'w');
@@ -229,7 +232,7 @@ end
 fclose(fid);
 
 csv_info = dir(output_csv);
-fprintf('  -> %s (%.1f MB, %d samples)\n', output_csv, csv_info.bytes / 1e6, total_samples);
+fprintf('  -> %s (%.1f MB, %d samples)\n', csv_info.name, csv_info.bytes / 1e6, total_samples);
 
 %% Summary statistics
 if ~isempty(haptic_means_all)
@@ -349,7 +352,7 @@ meta.GeneratedBy = struct( ...
     'GenerationDateTime', timestamp_str);
 
 %% Write JSON
-output_json = 'HapticFeedback.json';
+output_json = fullfile(outputDir, 'HapticFeedback.json');
 json_str = jsonencode(meta);
 json_str = prettify_json(json_str);
 fid = fopen(output_json, 'w');

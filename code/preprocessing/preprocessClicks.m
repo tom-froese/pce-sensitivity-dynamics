@@ -49,15 +49,18 @@ fprintf('  Participants per dyad:    %d\n', num_participants);
 fprintf('==========================================================\n\n');
 
 %% Discover experiment folders
-mainDir = pwd;
-folders = dir(fullfile(mainDir, 'pce*'));
+rawDir    = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'data', 'raw', 'Behavior');
+outputDir = fullfile(fileparts(mfilename('fullpath')), '..', '..', 'data', 'preprocessed', 'ClickTimes');
+if ~isfolder(outputDir); mkdir(outputDir); end
+
+folders = dir(fullfile(rawDir, 'pce*'));
 folders = folders([folders.isdir]);
 
 fprintf('Found %d experiment folders.\n\n', length(folders));
 
 if isempty(folders)
     error(['No pce* folders found in:\n  %s\n' ...
-           'Please run this script from the root data directory.'], mainDir);
+           'Download the raw behavioural data from Zenodo and place it in data/raw/Behavior/.'], rawDir);
 end
 
 %% Preallocate output storage
@@ -75,7 +78,7 @@ click_times_all       = [];   % For summary statistics
 %% Main extraction loop
 for f = 1:length(folders)
     folder_name = folders(f).name;
-    trials_path = fullfile(mainDir, folder_name, 'trials');
+    trials_path = fullfile(rawDir, folder_name, 'trials');
 
     % Extract dyad number from folder name (digits after 'pce')
     dyad_num_str = regexp(folder_name, 'pce(\d+)', 'tokens');
@@ -187,7 +190,7 @@ end
 click_rows = click_rows(sort_idx);
 
 %% Export CSV
-output_csv = 'ClickResponseTimes.csv';
+output_csv = fullfile(outputDir, 'ClickResponseTimes.csv');
 fprintf('Writing %s ...\n', output_csv);
 
 fid = fopen(output_csv, 'w');
@@ -330,7 +333,7 @@ meta.GeneratedBy = struct( ...
     'GenerationDateTime', timestamp_str);
 
 % Write JSON
-output_json = 'ClickResponseTimes.json';
+output_json = fullfile(outputDir, 'ClickResponseTimes.json');
 json_str = jsonencode(meta);
 json_str = prettify_json(json_str);
 fid = fopen(output_json, 'w');

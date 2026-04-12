@@ -1,35 +1,35 @@
 %% globalScalpPotential_stats.m
 % =========================================================================
-% Global Scalp Potential: Per-Participant P(1) Fits & Group Statistics
+% Global Scalp Potential: Per-Participant Sensitivity Fits & Group Stats
 % =========================================================================
 %
 % PURPOSE:
 %   Loads the participant-level time courses from globalScalpPotential.m
 %   and performs a hierarchical statistical analysis:
 %
-%   (A) PRIMARY: Per-participant P(1) model fitting
+%   (A) PRIMARY: Per-participant sensitivity model fitting
 %       - Smooth each participant's time course (5 s moving average)
-%       - Invert (negate) the signal
-%       - Fit P(1)(x) = A * lambda * x * exp(-lambda * x) + B
+%       - Fit S(x) = A * x * exp(-e * x) + B  directly (no inversion)
 %         with lambda = e fixed, tau (onset lag) by grid search, A & B by OLS
-%       - Extract per-participant: R², tau, peak time, amplitude A
+%       - A is expected to be negative (the GSP has a natural trough)
+%       - Extract per-participant: R², tau, trough time, amplitude A
 %       - Group-level tests:
 %         * One-sample t-test & Wilcoxon: R² > 0
 %         * One-sample t-test & Wilcoxon: amplitude A ≠ 0
-%         * Consistency of peak time (mean ± SD, CI)
+%         * Consistency of trough time (mean ± SD, CI)
 %         * Cohen's d effect sizes
 %
 %   (B) ROBUSTNESS: Permutation test on grand-average fit
 %       - Compute grand-average time course (median across participants)
-%       - Fit P(1) → observed R²
+%       - Fit S(x) → observed R²
 %       - Permutation null: for each of nPerm iterations, circularly shift
 %         each participant's time course by a random amount, recompute
-%         grand average, refit P(1) → null R² distribution
+%         grand average, refit S(x) → null R² distribution
 %       - p-value = proportion of null R² ≥ observed R²
 %
 %   (C) ROI ANALYSIS: Repeat (A) for each of 7 anterior-posterior ROIs
 %
-%   (D) REST CONTROL: Fit P(1) to rest data to confirm no systematic
+%   (D) REST CONTROL: Fit S(x) to rest data to confirm no systematic
 %       temporal structure (R² should be near zero)
 %
 % INPUT:
@@ -48,7 +48,9 @@ clearvars; close all; clc;
 %  1. LOAD DATA
 %  ========================================================================
 
-dataFile = fullfile(pwd, 'EEG', 'globalScalpPotential_data.mat');
+scriptDir = fileparts(mfilename('fullpath'));
+eegDir   = fullfile(scriptDir, '..', '..', 'data', 'preprocessed', 'EEG');
+dataFile = fullfile(eegDir, 'globalScalpPotential_data.mat');
 if ~exist(dataFile, 'file')
     error('Data file not found: %s\nRun globalScalpPotential.m first.', dataFile);
 end
@@ -87,7 +89,7 @@ taskTC_sm_test = conv(taskTC(1,:), kernel, 'valid');
 nSampSm = length(taskTC_sm_test);
 tTaskSm = tTask(halfK+1 : halfK+nSampSm);
 
-lambda = exp(1);  % Fixed Poisson rate parameter
+lambda = exp(1);  % Fixed rate parameter (sensitivity framework)
 
 fprintf('Smoothing: %.1f s window (%d samples)\n', smoothWin_s, smoothK);
 fprintf('Fitting window: %.1f – %.1f s (%d samples)\n', ...
@@ -97,27 +99,23 @@ fprintf('Fitting window: %.1f – %.1f s (%d samples)\n', ...
 %  3. PER-PARTICIPANT P(1) FITS (GLOBAL)
 %  ========================================================================
 
-fprintf('\n--- Per-Participant P(1) Fits (Global Scalp Potential) ---\n');
+fprintf('\n--- Per-Participant Sensitivity Fits (Global Scalp Potential) ---\n');
 
-partR2   = nan(nPart, 1);
-partTau  = nan(nPart, 1);
-partA    = nan(nPart, 1);
-partB    = nan(nPart, 1);
-partPeak = nan(nPart, 1);
-partFits = nan(nPart, nSampSm);    % fitted curves
-partSmTC = nan(nPart, nSampSm);    % smoothed inverted time courses
+partR2     = nan(nPart, 1);
+partTau    = nan(nPart, 1);
+partA      = nan(nPart, 1);
+partB      = nan(nPart, 1);
+partTrough = nan(nPart, 1);
+partFits   = nan(nPart, nSampSm);    % fitted curves
+partSmTC   = nan(nPart, nSampSm);    % smoothed time courses (raw, no inversion)
 
 for pi = 1:nPart
-    % Smooth
+    % Smooth (no inversion — fit sensitivity directly to raw GSP)
     sm = conv(taskTC(pi,:), kernel, 'valid');
-    % Invert (negate) — we expect a negative-going potential that,
-    % when inverted, shows the P(1) rise-peak-fall shape
-    sm_inv = -sm;
+    partSmTC(pi,:) = sm;
 
-    partSmTC(pi,:) = sm_inv;
-
-    % Fit P(1)
-    [yFit, R2, tau, A, B] = fitP1_gsp(tTaskSm, sm_inv, lambda);
+    % Fit S(x) = A*x*exp(-e*x) + B  (A expected negative → trough)
+    [yFit, R2, tau, A, B] = fitSensitivity_gsp(tTaskSm, sm, lambda);
 
     partR2(pi)      = R2;
     partTau(pi)     = tau;
@@ -125,15 +123,15 @@ for pi = 1:nPart
     partB(pi)       = B;
     partFits(pi,:)  = yFit;
 
-    % Peak time of the fitted curve
-    [~, pkIdx] = max(yFit);
-    partPeak(pi) = tTaskSm(pkIdx);
+    % Trough time of the fitted curve (sensitivity minimum)
+    [~, trIdx] = min(yFit);
+    partTrough(pi) = tTaskSm(trIdx);
 end
 
 fprintf('  Per-participant R²: mean=%.3f, median=%.3f, SD=%.3f\n', ...
     mean(partR2), median(partR2), std(partR2));
-fprintf('  Per-participant peak: mean=%.1f s, median=%.1f s, SD=%.1f s\n', ...
-    mean(partPeak), median(partPeak), std(partPeak));
+fprintf('  Per-participant trough: mean=%.1f s, median=%.1f s, SD=%.1f s\n', ...
+    mean(partTrough), median(partTrough), std(partTrough));
 
 %% ========================================================================
 %  4. GROUP-LEVEL STATISTICS (GLOBAL)
@@ -166,15 +164,15 @@ fprintf('    t(%d) = %.3f, p = %.2e, d_z = %.3f\n', df, sA.tstat, pA_t, dz_A);
 fprintf('    Wilcoxon signed-rank: p = %.2e\n', pA_w);
 fprintf('    Mean A = %.4f, SD = %.4f\n', mean(partA), std(partA));
 
-% --- Peak time consistency ---
-fprintf('\n  Peak time:\n');
-fprintf('    Mean = %.2f s, SD = %.2f s\n', mean(partPeak), std(partPeak));
-fprintf('    Median = %.2f s\n', median(partPeak));
+% --- Trough time consistency ---
+fprintf('\n  Trough time:\n');
+fprintf('    Mean = %.2f s, SD = %.2f s\n', mean(partTrough), std(partTrough));
+fprintf('    Median = %.2f s\n', median(partTrough));
 fprintf('    95%% CI = [%.2f, %.2f] s\n', ...
-    mean(partPeak) - 1.96*std(partPeak)/sqrt(nPart), ...
-    mean(partPeak) + 1.96*std(partPeak)/sqrt(nPart));
+    mean(partTrough) - 1.96*std(partTrough)/sqrt(nPart), ...
+    mean(partTrough) + 1.96*std(partTrough)/sqrt(nPart));
 fprintf('    IQR = [%.2f, %.2f] s\n', ...
-    prctile(partPeak, 25), prctile(partPeak, 75));
+    prctile(partTrough, 25), prctile(partTrough, 75));
 
 % --- Tau (onset lag) ---
 fprintf('\n  Onset lag (tau):\n');
@@ -185,21 +183,20 @@ fprintf('    Median = %.2f s\n', median(partTau));
 %  5. GRAND-AVERAGE FIT (for comparison with existing analysis)
 %  ========================================================================
 
-fprintf('\n--- Grand-Average P(1) Fit ---\n');
+fprintf('\n--- Grand-Average Sensitivity Fit ---\n');
 
-grandMedian     = median(taskTC, 1, 'omitnan');
-grandMedian_sm  = conv(grandMedian, kernel, 'valid');
-grandMedian_inv = -grandMedian_sm;
+grandMedian    = median(taskTC, 1, 'omitnan');
+grandMedianSm  = conv(grandMedian, kernel, 'valid');
 
 [grandFit, grandR2, grandTau, grandA, grandB] = ...
-    fitP1_gsp(tTaskSm, grandMedian_inv, lambda);
+    fitSensitivity_gsp(tTaskSm, grandMedianSm, lambda);
 
-[~, grandPkIdx] = max(grandFit);
-grandPeak = tTaskSm(grandPkIdx);
+[~, grandTrIdx] = min(grandFit);
+grandTrough = tTaskSm(grandTrIdx);
 
 fprintf('  Grand-average R² = %.4f\n', grandR2);
 fprintf('  Grand-average tau = %.2f s\n', grandTau);
-fprintf('  Grand-average peak = %.2f s\n', grandPeak);
+fprintf('  Grand-average trough = %.2f s\n', grandTrough);
 fprintf('  Grand-average A = %.4f, B = %.4f\n', grandA, grandB);
 
 %% ========================================================================
@@ -222,12 +219,11 @@ for pi_perm = 1:nPerm
     end
 
     % Recompute grand average
-    nullGrand     = median(shifted, 1, 'omitnan');
-    nullGrand_sm  = conv(nullGrand, kernel, 'valid');
-    nullGrand_inv = -nullGrand_sm;
+    nullGrand    = median(shifted, 1, 'omitnan');
+    nullGrand_sm = conv(nullGrand, kernel, 'valid');
 
-    % Fit P(1)
-    [~, nullR2(pi_perm)] = fitP1_gsp(tTaskSm, nullGrand_inv, lambda);
+    % Fit S(x)
+    [~, nullR2(pi_perm)] = fitSensitivity_gsp(tTaskSm, nullGrand_sm, lambda);
 
     if mod(pi_perm, 1000) == 0
         fprintf('  Permutation %d/%d done\n', pi_perm, nPerm);
@@ -261,8 +257,7 @@ if ~isempty(restTC)
     restR2 = nan(nPartRest, 1);
     for pi = 1:nPartRest
         sm = conv(restTC(pi,:), kernel_rest, 'valid');
-        sm_inv = -sm;
-        [~, restR2(pi)] = fitP1_gsp(tRestSm, sm_inv, lambda);
+        [~, restR2(pi)] = fitSensitivity_gsp(tRestSm, sm, lambda);
     end
 
     fprintf('  Rest R²: mean=%.4f, median=%.4f, SD=%.4f\n', ...
@@ -273,73 +268,71 @@ if ~isempty(restTC)
     fprintf('  Task vs Rest R²: t = %.3f, p = %.2e\n', sTaskRest.tstat, pTaskRest);
 
     % Grand rest average
-    grandRest     = median(restTC, 1, 'omitnan');
-    grandRest_sm  = conv(grandRest, kernel_rest, 'valid');
-    grandRest_inv = -grandRest_sm;
-    [grandRestFit, grandRestR2] = fitP1_gsp(tRestSm, grandRest_inv, lambda);
+    grandRest    = median(restTC, 1, 'omitnan');
+    grandRestSm  = conv(grandRest, kernel_rest, 'valid');
+    [grandRestFit, grandRestR2] = fitSensitivity_gsp(tRestSm, grandRestSm, lambda);
 
     fprintf('  Grand rest R² = %.4f (should be near zero / much < task)\n', grandRestR2);
 else
     fprintf('\n  No rest data available.\n');
-    restR2 = []; grandRestR2 = NaN; tRestSm = []; grandRest_inv = []; grandRestFit = [];
+    restR2 = []; grandRestR2 = NaN; tRestSm = []; grandRestSm = []; grandRestFit = [];
 end
 
 %% ========================================================================
 %  8. ROI ANALYSIS
 %  ========================================================================
 
-fprintf('\n--- ROI-Level Per-Participant P(1) Fits ---\n');
-fprintf('%-18s  Mean_R2   SD_R2    t(%d)     p_t        d_z     Mean_Peak  SD_Peak\n', ...
+fprintf('\n--- ROI-Level Per-Participant Sensitivity Fits ---\n');
+fprintf('%-18s  Mean_R2   SD_R2    t(%d)     p_t        d_z     Mean_Tr    SD_Tr\n', ...
     'ROI', df);
 fprintf('%s\n', repmat('-', 1, 95));
 
-roiPartR2   = cell(nROI, 1);
-roiPartPeak = cell(nROI, 1);
-roiPartA    = cell(nROI, 1);
-roiPartTau  = cell(nROI, 1);
-roiPartFits = cell(nROI, 1);
-roiPartSmTC = cell(nROI, 1);
+roiPartR2     = cell(nROI, 1);
+roiPartTrough = cell(nROI, 1);
+roiPartA      = cell(nROI, 1);
+roiPartTau    = cell(nROI, 1);
+roiPartFits   = cell(nROI, 1);
+roiPartSmTC   = cell(nROI, 1);
 
-roiGrandR2   = nan(nROI, 1);
-roiGrandTau  = nan(nROI, 1);
-roiGrandPeak = nan(nROI, 1);
-roiGrandA    = nan(nROI, 1);
-roiGrandB    = nan(nROI, 1);
-roiGrandFit  = nan(nROI, nSampSm);
-roiGrandInv  = nan(nROI, nSampSm);
+roiGrandR2     = nan(nROI, 1);
+roiGrandTau    = nan(nROI, 1);
+roiGrandTrough = nan(nROI, 1);
+roiGrandA      = nan(nROI, 1);
+roiGrandB      = nan(nROI, 1);
+roiGrandFit    = nan(nROI, nSampSm);
+roiGrandSm     = nan(nROI, nSampSm);
 
 for ri = 1:nROI
     rTC = roiTC{ri};      % [nPart x nSampTask]
     nP  = size(rTC, 1);
 
-    rR2   = nan(nP, 1);
-    rPeak = nan(nP, 1);
-    rA    = nan(nP, 1);
-    rTau  = nan(nP, 1);
-    rFits = nan(nP, nSampSm);
-    rSmTC = nan(nP, nSampSm);
+    rR2     = nan(nP, 1);
+    rTrough = nan(nP, 1);
+    rA      = nan(nP, 1);
+    rTau    = nan(nP, 1);
+    rFits   = nan(nP, nSampSm);
+    rSmTC   = nan(nP, nSampSm);
 
     for pi = 1:nP
         sm = conv(rTC(pi,:), kernel, 'valid');
-        sm_inv = -sm;
-        rSmTC(pi,:) = sm_inv;
+        rSmTC(pi,:) = sm;    % raw smoothed (no inversion)
 
-        [yFit, R2, tau, A] = fitP1_gsp(tTaskSm, sm_inv, lambda);
+        [yFit, R2, tau, A] = fitSensitivity_gsp(tTaskSm, sm, lambda);
         rR2(pi)     = R2;
         rTau(pi)    = tau;
         rA(pi)      = A;
         rFits(pi,:) = yFit;
 
-        [~, pkIdx] = max(yFit);
-        rPeak(pi)   = tTaskSm(pkIdx);
+        [~, trIdx] = min(yFit);   % trough (A < 0)
+        rTrough(pi) = tTaskSm(trIdx);
     end
 
-    roiPartR2{ri}   = rR2;
-    roiPartPeak{ri} = rPeak;
-    roiPartA{ri}    = rA;
-    roiPartTau{ri}  = rTau;
-    roiPartFits{ri} = rFits;
-    roiPartSmTC{ri} = rSmTC;
+    roiPartR2{ri}     = rR2;
+    roiPartTrough{ri} = rTrough;
+    roiPartA{ri}      = rA;
+    roiPartTau{ri}    = rTau;
+    roiPartFits{ri}   = rFits;
+    roiPartSmTC{ri}   = rSmTC;
 
     % Group stats for this ROI
     [~, pval, ~, s] = ttest(rR2, 0, 'Tail', 'right');
@@ -347,49 +340,48 @@ for ri = 1:nROI
 
     fprintf('%-18s  %.4f    %.4f   %+6.3f    %-10s  %+.3f   %.1f s      %.1f s\n', ...
         roi.names{ri}, mean(rR2), std(rR2), s.tstat, ...
-        formatP(pval), dz, mean(rPeak), std(rPeak));
+        formatP(pval), dz, mean(rTrough), std(rTrough));
 
-    % Grand average for ROI
-    rGrand     = median(rTC, 1, 'omitnan');
-    rGrand_sm  = conv(rGrand, kernel, 'valid');
-    rGrand_inv = -rGrand_sm;
-    [rGFit, rGR2, rGTau, rGA, rGB] = fitP1_gsp(tTaskSm, rGrand_inv, lambda);
+    % Grand average for ROI (no inversion)
+    rGrand    = median(rTC, 1, 'omitnan');
+    rGrand_sm = conv(rGrand, kernel, 'valid');
+    [rGFit, rGR2, rGTau, rGA, rGB] = fitSensitivity_gsp(tTaskSm, rGrand_sm, lambda);
 
-    roiGrandR2(ri)    = rGR2;
-    roiGrandTau(ri)   = rGTau;
-    roiGrandA(ri)     = rGA;
-    roiGrandB(ri)     = rGB;
-    roiGrandFit(ri,:) = rGFit;
-    roiGrandInv(ri,:) = rGrand_inv;
+    roiGrandR2(ri)      = rGR2;
+    roiGrandTau(ri)     = rGTau;
+    roiGrandA(ri)       = rGA;
+    roiGrandB(ri)       = rGB;
+    roiGrandFit(ri,:)   = rGFit;
+    roiGrandSm(ri,:)    = rGrand_sm;
 
-    [~, pkIdx] = max(rGFit);
-    roiGrandPeak(ri) = tTaskSm(pkIdx);
+    [~, trIdx] = min(rGFit);   % trough (A < 0)
+    roiGrandTrough(ri) = tTaskSm(trIdx);
 end
 
 fprintf('\n--- Grand-Average ROI Fits ---\n');
-fprintf('%-18s  R2_grand  Tau(s)  Peak(s)  A         B\n', 'ROI');
+fprintf('%-18s  R2_grand  Tau(s)  Trough(s)  A         B\n', 'ROI');
 fprintf('%s\n', repmat('-', 1, 70));
 for ri = 1:nROI
-    fprintf('%-18s  %.4f    %.1f     %.1f      %+.4f    %+.4f\n', ...
+    fprintf('%-18s  %.4f    %.1f     %.1f        %+.4f    %+.4f\n', ...
         roi.names{ri}, roiGrandR2(ri), roiGrandTau(ri), ...
-        roiGrandPeak(ri), roiGrandA(ri), roiGrandB(ri));
+        roiGrandTrough(ri), roiGrandA(ri), roiGrandB(ri));
 end
 
 %% ========================================================================
 %  9. SAVE ALL RESULTS
 %  ========================================================================
 
-outputFile = fullfile(pwd, 'EEG', 'globalScalpPotential_stats.mat');
+outputFile = fullfile(eegDir, 'globalScalpPotential_stats.mat');
 save(outputFile, ...
-    'partR2', 'partTau', 'partA', 'partB', 'partPeak', ...
+    'partR2', 'partTau', 'partA', 'partB', 'partTrough', ...
     'partFits', 'partSmTC', ...
-    'grandMedian_inv', 'grandFit', 'grandR2', 'grandTau', 'grandPeak', 'grandA', 'grandB', ...
+    'grandMedianSm', 'grandFit', 'grandR2', 'grandTau', 'grandTrough', 'grandA', 'grandB', ...
     'nullR2', 'pPerm', 'nPerm', ...
-    'restR2', 'grandRestR2', 'tRestSm', 'grandRest_inv', 'grandRestFit', ...
-    'roiPartR2', 'roiPartPeak', 'roiPartA', 'roiPartTau', ...
+    'restR2', 'grandRestR2', 'tRestSm', 'grandRestSm', 'grandRestFit', ...
+    'roiPartR2', 'roiPartTrough', 'roiPartA', 'roiPartTau', ...
     'roiPartFits', 'roiPartSmTC', ...
-    'roiGrandR2', 'roiGrandTau', 'roiGrandPeak', 'roiGrandA', 'roiGrandB', ...
-    'roiGrandFit', 'roiGrandInv', ...
+    'roiGrandR2', 'roiGrandTau', 'roiGrandTrough', 'roiGrandA', 'roiGrandB', ...
+    'roiGrandFit', 'roiGrandSm', ...
     'tTaskSm', 'smoothWin_s', 'lambda', ...
     'cfg', 'roi', 'nROI', 'nPart', ...
     '-v7.3');
@@ -404,15 +396,15 @@ fprintf('\n==========================================================\n');
 fprintf('  GLOBAL SCALP POTENTIAL — STATISTICAL SUMMARY\n');
 fprintf('==========================================================\n');
 fprintf('  N = %d participants\n', nPart);
-fprintf('\n  GLOBAL (per-participant P(1) fits):\n');
+fprintf('\n  GLOBAL (per-participant sensitivity fits):\n');
 fprintf('    R²:        M=%.3f, SD=%.3f, t(%d)=%.2f, p=%.2e, d_z=%.3f\n', ...
     mean(partR2), std(partR2), df, sR2.tstat, pR2_t, dz_R2);
 fprintf('    Amplitude: M=%.4f, SD=%.4f, t(%d)=%.2f, p=%.2e\n', ...
     mean(partA), std(partA), df, sA.tstat, pA_t);
-fprintf('    Peak time: M=%.1f s, SD=%.1f s\n', mean(partPeak), std(partPeak));
+fprintf('    Trough:    M=%.1f s, SD=%.1f s\n', mean(partTrough), std(partTrough));
 fprintf('    Onset lag: M=%.1f s, SD=%.1f s\n', mean(partTau), std(partTau));
 fprintf('\n  GRAND-AVERAGE:\n');
-fprintf('    R² = %.4f, tau = %.1f s, peak = %.1f s\n', grandR2, grandTau, grandPeak);
+fprintf('    R² = %.4f, tau = %.1f s, trough = %.1f s\n', grandR2, grandTau, grandTrough);
 fprintf('    Permutation p = %.4f (%d perms)\n', pPerm, nPerm);
 if ~isempty(restR2)
     fprintf('\n  REST CONTROL:\n');
@@ -421,8 +413,8 @@ if ~isempty(restR2)
 end
 fprintf('\n  ROI SUMMARY (grand-average R²):\n');
 for ri = 1:nROI
-    fprintf('    %-18s  R² = %.4f, peak = %.1f s\n', ...
-        roi.names{ri}, roiGrandR2(ri), roiGrandPeak(ri));
+    fprintf('    %-18s  R² = %.4f, trough = %.1f s\n', ...
+        roi.names{ri}, roiGrandR2(ri), roiGrandTrough(ri));
 end
 fprintf('==========================================================\n');
 fprintf('Done.\n');
@@ -431,13 +423,14 @@ fprintf('Done.\n');
 %  LOCAL FUNCTIONS
 %  ========================================================================
 
-function [yFit, bestR2, bestTau, bestA, bestB] = fitP1_gsp(tVec, yData, lambda)
-%FITP1_GSP  Fit Poisson first-order term P(1) to a time series.
+function [yFit, bestR2, bestTau, bestA, bestB] = fitSensitivity_gsp(tVec, yData, lambda)
+%FITSENSITIVITY_GSP  Fit sensitivity function S(x) to a GSP time series.
 %
 %   Model: y(t) = A * lambda * x * exp(-lambda * x) + B
 %          where x = (t_rel - tau) / (T_rel - tau),
 %          t_rel = tVec - tVec(1), T_rel = tVec(end) - tVec(1).
 %   lambda is fixed (= e). A, B estimated by OLS at each candidate tau.
+%   A is expected negative for raw GSP (trough at x = 1/lambda).
 %   tau is found by grid search maximizing R².
 
     t0   = tVec(1);

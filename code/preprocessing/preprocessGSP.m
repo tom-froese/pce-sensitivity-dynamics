@@ -50,8 +50,9 @@ clearvars; close all; clc;
 %  1. CONFIGURATION
 %  ========================================================================
 
-cfg.dataDir    = fullfile(pwd, 'EEG raw');
-cfg.outputDir  = fullfile(pwd, 'EEG');
+scriptDir      = fileparts(mfilename('fullpath'));
+cfg.dataDir    = fullfile(scriptDir, '..', '..', 'data', 'raw', 'EEG');
+cfg.outputDir  = fullfile(scriptDir, '..', '..', 'data', 'preprocessed', 'EEG');
 
 cfg.nChan      = 64;        % Total channels in raw files
 cfg.fsOrig     = 1000;      % Original sampling rate (Hz)
