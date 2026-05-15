@@ -29,7 +29,7 @@ All three scripts use relative paths and output 600 dpi PNG files to `results/`.
 
 ## Data
 
-### Preprocessed data (included in this repository)
+### Preprocessed data (included in this repository; also archived on Zenodo)
 
 The figure scripts load these precomputed files directly:
 
@@ -41,17 +41,17 @@ The figure scripts load these precomputed files directly:
 | `data/preprocessed/PAS/` | PAS sensitivity and crossover analysis (MAT) | 40 KB |
 | `data/preprocessed/EEG/` | Global scalp potential data and statistics (MAT) | 7 MB |
 
-### Raw data (on Zenodo, required only for re-running preprocessing)
+These files are also archived on Zenodo: [10.5281/zenodo.19425014](https://doi.org/10.5281/zenodo.19425014). To set up from the Zenodo archive, download `preprocessed.zip` and unzip it into `data/`.
 
-To reproduce the full pipeline from scratch, download the raw data archive from Zenodo, unzip it into `data/raw/`:
+### Raw data (on OSF, required only for re-running preprocessing)
 
-| Directory | Contents | Size |
-|-----------|----------|------|
-| `data/raw/Behavior/` | Raw trial CSVs and PAS questionnaires (32 dyads) | ~1.8 GB |
-| `data/raw/EDA/` | Raw EDA .mat files (1000 Hz, task + rest) | ~107 MB |
-| `data/raw/EEG/` | Raw EEG .mat files (64 ch, 1000 Hz, task + rest) | ~15 GB |
+The raw experimental data is archived on OSF as part of the [Perceptual Crossing Dataset](https://osf.io/47n3p). To reproduce the full pipeline from scratch, download the raw data and organize it into `data/raw/`:
 
-Zenodo DOI: [10.5281/zenodo.19425014](https://doi.org/10.5281/zenodo.19425014)
+| Directory | OSF source | Size |
+|-----------|------------|------|
+| `data/raw/Behavior/` | [osf.io/7hfec](https://osf.io/7hfec) — behavioral data (32 dyad folders) | ~1.8 GB |
+| `data/raw/EDA/` | [osf.io/47n3p](https://osf.io/47n3p) — Peripheral Physiological Data / EDA.zip | ~38 MB |
+| `data/raw/EEG/` | [osf.io/47n3p](https://osf.io/47n3p) — Raw EEG Hyperscanning Data (32 per-dyad zips) | ~15 GB |
 
 After downloading, your `data/raw/` directory should contain `Behavior/`, `EDA/`, and `EEG/` subfolders, each with `pce*` experiment folders inside.
 
@@ -88,7 +88,7 @@ pce-sensitivity-dynamics/
 │   │   ├── EEG/                     # Neural data (MAT files)
 │   │   ├── Haptics/                 # Haptic feedback time series
 │   │   └── PAS/                     # Perceptual awareness analysis
-│   └── raw/                         # NOT tracked (download from Zenodo)
+│   └── raw/                         # NOT tracked (download from OSF)
 │       ├── Behavior/                # Raw trial CSVs + questionnaires
 │       ├── EDA/                     # Raw EDA .mat files
 │       └── EEG/                     # Raw EEG .mat files
@@ -102,7 +102,7 @@ pce-sensitivity-dynamics/
 
 The figure scripts load precomputed data files included in `data/preprocessed/`. The preprocessing scripts document how these files were generated from raw experimental data.
 
-To reproduce from scratch, download the raw data from Zenodo into `data/raw/`, then run from `code/preprocessing/`:
+To reproduce from scratch, download the raw data from OSF (see above) into `data/raw/`, then run from `code/preprocessing/`:
 
 ```matlab
 cd code/preprocessing

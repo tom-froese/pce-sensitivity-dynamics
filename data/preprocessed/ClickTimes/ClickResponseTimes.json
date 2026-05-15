@@ -1,12 +1,14 @@
 {
-    "Name": "Perceptual Crossing Experiment - Click Response Times",
-    "Description": "First button-press response times extracted from perceptual crossing experiment trials. Each row represents one participant's response in one trial. Trials last 60 seconds. If no click was recorded within the trial, ClickTime_s is NaN and Clicked is 0.",
+    "Name": "Perceptual Crossing Experiment - Click Response Times (with Target Classification)",
+    "Description": "First button-press response times extracted from perceptual crossing experiment trials, augmented with click-target classification (avatar / shadow / static / none) following the algorithm of Froese, Iizuka & Ikegami (2014) Sci. Rep. 4:3672. Each row represents one participant's response in one trial. Trials last 60 seconds.",
     "Columns": [
         "DyadID",
         "ParticipantID",
         "TrialNum",
         "ClickTime_s",
-        "Clicked"
+        "Clicked",
+        "ClickTarget",
+        "Correct"
     ],
     "DyadID": {
         "LongName": "Dyad Identifier",
@@ -31,6 +33,24 @@
         "Levels": {
             "x0": "No click detected (missed trial)",
             "x1": "Click detected"
+        }
+    },
+    "ClickTarget": {
+        "LongName": "Classified Click Target",
+        "Description": "Categorical label for the target toward which the participant was clicking, determined from the participant's position state 1.0 s before the button press. Classification follows the priority rule and +/-70 unit range described in Froese, Iizuka & Ikegami (2014) Sci. Rep. 4:3672. Set to \"none\" when no click was recorded.",
+        "Levels": {
+            "avatar": "Partner's avatar was within +/-70 units (correct click)",
+            "shadow": "Partner's shadow was within +/-70 units (and avatar was not)",
+            "static": "Own static object was within +/-70 units (and neither avatar nor shadow was)",
+            "none": "No target was within +/-70 units, or no click was recorded"
+        }
+    },
+    "Correct": {
+        "LongName": "Correct Click",
+        "Description": "Binary flag: 1 if ClickTarget == \"avatar\", 0 otherwise. NaN for rows with no detected click.",
+        "Levels": {
+            "x0": "Click classified as shadow, static, or none",
+            "x1": "Click classified as partner avatar"
         }
     },
     "SourceData": {
@@ -60,31 +80,53 @@
             "button1": "Participant 2 response"
         }
     },
-    "ExtractionMethod": {
-        "Description": "For each trial CSV, the script finds the first row where buttonX == 1 and records the corresponding timestamp value. If no row satisfies this condition, the click time is set to NaN.",
+    "ClassificationMethod": {
+        "Reference": "Froese T, Iizuka H, Ikegami T (2014). Embodied social interaction constitutes social cognition in pairs of humans: A minimalist virtual reality experiment. Scientific Reports 4:3672. doi:10.1038/srep03672",
+        "LookbackWindowSeconds": 1,
+        "ClassificationRangeUnits": 70,
+        "LineLengthUnits": 600,
+        "WrapAround": true,
+        "PriorityOrder": [
+            "avatar",
+            "shadow",
+            "static",
+            "none"
+        ],
+        "ShadowConvention": "pos_partner + shadow_delta_partner (mod L)",
+        "StaticOwnership": {
+            "Participant1": "static_object_0",
+            "Participant2": "static_object_1"
+        },
+        "RangeJustification": "The +/-70 unit range was chosen (following Froese et al. 2014) so that the partner's avatar and shadow cannot be within range at the same time: shadow separation is 150 units and 2 * 70 = 140 < 150.",
         "Steps": [
-            "1. Read trial CSV with readtable()",
-            "2. Locate first occurrence of button0 == 1 (P1)",
-            "3. Locate first occurrence of button1 == 1 (P2)",
-            "4. Record timestamp at first-click index, or NaN if absent"
+            "1. Identify click sample: first row where buttonX == 1.",
+            "2. Compute target time: t_click - 1.0 s.",
+            "3. Find row with timestamp closest to target time (or first row if earlier than trial start).",
+            "4. At that row, compute wrap-around distance from self position to: partner avatar, partner shadow, own static object.",
+            "5. Apply priority rule: avatar if |d| <= 70; else shadow if |d| <= 70; else static if |d| <= 70; else none.",
+            "6. Mark Correct = 1 iff ClickTarget == \"avatar\"."
+        ]
+    },
+    "ExtractionMethod": {
+        "Description": "Click times were extracted by preprocessClicks.m. This script (classifyClicks.m) re-opens each raw trial CSV to extract the position state 1.0 s before the recorded click and classifies the target under the Froese et al. (2014) priority rule.",
+        "Pipeline": [
+            "preprocessClicks.m (extracts first click per participant per trial)",
+            "classifyClicks.m  (augments with ClickTarget and Correct)"
         ]
     },
     "DataSummary": {
         "NumDyads": 32,
-        "NumTrialFilesProcessed": 576,
-        "TotalClicksDetected": 1030,
-        "TotalClicksMissed": 122,
-        "ClickRate": 0.89409722222222221,
-        "MeanClickTime_s": 30.612565019668,
-        "StdClickTime_s": 14.066800787785807,
-        "MedianClickTime_s": 29.941500056999757,
-        "MinClickTime_s": 0,
-        "MaxClickTime_s": 59.804042087998823,
-        "IQRClickTime_s": 22.075293944002624
+        "NumRows": 1152,
+        "NumClassifiedClicks": 1030,
+        "NumAvatar": 654,
+        "NumShadow": 216,
+        "NumStatic": 76,
+        "NumNone": 84,
+        "OverallAccuracy": 0.63495145631067962
     },
     "GeneratedBy": {
-        "Name": "preprocessClicks.m",
-        "Description": "MATLAB preprocessing script for PCE click response-time extraction.",
-        "GenerationDateTime": "2026-04-10T15:13:57"
+        "Name": "classifyClicks.m",
+        "Description": "MATLAB script that augments ClickResponseTimes.csv with click-target classification using the Froese et al. (2014) algorithm.",
+        "GenerationDateTime": "2026-04-19T11:18:42"
     }
 }

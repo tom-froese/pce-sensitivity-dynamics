@@ -13,10 +13,16 @@
 *.tmp
 *.bak
 
-# Raw data — not tracked (download from Zenodo, unzip into data/raw/)
+# Raw data — not tracked (download from OSF, see README)
 data/raw/
 
 # Uncompressed haptic data (use .gz version)
 data/preprocessed/Haptics/HapticFeedback.csv
 
 zenodo_README.md
+
+# Scratch/exploration files
+code/analysis/_scratch/
+
+# Preprocessed data archive (available on Zenodo)
+data/preprocessed.zip
