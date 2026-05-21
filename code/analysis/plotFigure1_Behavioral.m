@@ -38,6 +38,7 @@
 %
 % OUTPUT:
 %   ../../results/Figure1_Behavioral.pdf  (vector PDF)
+%   ../../results/Figure1_Behavioral.png  (300 dpi raster for inspection)
 %
 % DEPENDENCIES: Signal Processing Toolbox, Optimization Toolbox
 %
@@ -49,12 +50,16 @@
 %  0. DATA PATHS AND AVAILABILITY CHECK
 %  ========================================================================
 
-clickFile    = '../../data/preprocessed/ClickTimes/ClickResponseTimes.csv';
-hapticFile   = '../../data/preprocessed/Haptics/HapticFeedback.csv';
-hapticGz     = '../../data/preprocessed/Haptics/HapticFeedback.csv.gz';
-edaTaskFile  = '../../data/preprocessed/EDA/EDA_Task_Preprocessed.csv';
-edaRestFile  = '../../data/preprocessed/EDA/EDA_Rest_Preprocessed.csv';
-gspStatsFile = '../../data/preprocessed/EEG/globalScalpPotential_stats.mat';
+scriptDir    = fileparts(mfilename('fullpath'));
+ROOT         = fullfile(scriptDir, '..', '..');
+resDir       = fullfile(ROOT, 'results');
+
+clickFile    = fullfile(ROOT, 'data', 'preprocessed', 'ClickTimes', 'ClickResponseTimes.csv');
+hapticFile   = fullfile(ROOT, 'data', 'preprocessed', 'Haptics', 'HapticFeedback.csv');
+hapticGz     = fullfile(ROOT, 'data', 'preprocessed', 'Haptics', 'HapticFeedback.csv.gz');
+edaTaskFile  = fullfile(ROOT, 'data', 'preprocessed', 'EDA', 'EDA_Task_Preprocessed.csv');
+edaRestFile  = fullfile(ROOT, 'data', 'preprocessed', 'EDA', 'EDA_Rest_Preprocessed.csv');
+gspStatsFile = fullfile(ROOT, 'data', 'preprocessed', 'EEG', 'globalScalpPotential_stats.mat');
 
 if ~isfile(clickFile)
     error('Missing: %s\nSee README for data download instructions.', clickFile);
@@ -600,9 +605,12 @@ set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out');
 %  SAVE
 %  ========================================================================
 
-outFile = '../../results/Figure1_Behavioral.pdf';
-exportgraphics(fig, outFile, 'ContentType', 'vector');
-fprintf('  Saved: %s (vector PDF)\n', outFile);
+outPDF = fullfile(resDir, 'Figure1_Behavioral.pdf');
+outPNG = fullfile(resDir, 'Figure1_Behavioral.png');
+exportgraphics(fig, outPDF, 'ContentType', 'vector', 'BackgroundColor', 'w');
+exportgraphics(fig, outPNG, 'Resolution', 300, 'BackgroundColor', 'w');
+fprintf('  Saved: %s (vector PDF)\n', outPDF);
+fprintf('  Saved: %s (300 dpi PNG)\n', outPNG);
 
 %% ========================================================================
 %  SUMMARY

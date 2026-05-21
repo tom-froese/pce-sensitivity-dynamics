@@ -106,7 +106,9 @@ fprintf('\n=============================================\n');
 fprintf('  Done. Figures saved to results/\n');
 fprintf('=============================================\n');
 
-for pat = {'Figure1_*.pdf', 'Figure2_*.pdf', 'Figure3_*.pdf'}
+for pat = {'Figure1_*.pdf', 'Figure1_*.png', ...
+           'Figure2_*.pdf', 'Figure2_*.png', ...
+           'Figure3_*.pdf', 'Figure3_*.png'}
     d = dir(fullfile(ROOT, 'results', pat{1}));
     for i = 1:numel(d)
         fprintf('  %s  (%d KB)\n', d(i).name, round(d(i).bytes/1024));

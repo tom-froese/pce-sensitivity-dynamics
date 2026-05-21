@@ -5,12 +5,11 @@
 %
 % Two-row figure:
 %
-%   TOP ROW (A) — Scalp-map triptych on the strict-filter set
-%              (tau* in [2, 6] s AND R^2_locked >= 0.70).
-%              Panels:  (i)  tau*  (s)
-%                       (ii) R^2 at locked tau = 3.90 s
-%                       (iii) Signed trough magnitude at tau-locked fit:
-%                             A * s(1/e) = A * (1/e) * exp(-1).
+%   TOP ROW (A) — Scalp-map triptych with progressive filtering:
+%              (i)   R^2_free (all 64 channels) — where does the model fit?
+%              (ii)  tau* (filtered: tau* in [2, 6] s) — timing gradient
+%              (iii) Signed trough magnitude (filtered: tau* in [2, 6] s
+%                    AND R^2_lock >= 0.70) — effect size
 %
 %   BOTTOM ROW (B) — ROI-mean scalp potential of the left and right
 %              parietal hemispheres (L: P1/P3/P5/P7; R: P2/P4/P6/P8),
@@ -26,7 +25,8 @@
 %   ../../results/FigureS2_GSP_TopoMap_FreeTau_perchannel.csv
 %
 % OUTPUTS:
-%   ../../results/Figure2_Neural.pdf
+%   ../../results/Figure2_Neural.pdf  (vector PDF)
+%   ../../results/Figure2_Neural.png  (300 dpi raster for inspection)
 %
 % DEPENDENCIES: EEGLAB (topoplot function)
 %
@@ -49,6 +49,7 @@ gspFile   = fullfile(ROOT, 'data', 'preprocessed', 'EEG', ...
 csvFile   = fullfile(ROOT, 'results', ...
                      'FigureS2_GSP_TopoMap_FreeTau_perchannel.csv');
 outPDF    = fullfile(ROOT, 'results', 'Figure2_Neural.pdf');
+outPNG    = fullfile(ROOT, 'results', 'Figure2_Neural.png');
 
 for f = {hemFile, gspFile, csvFile}
     if ~isfile(f{1})
@@ -133,56 +134,54 @@ for pair = {'Full parietal', fit_full;
 end
 
 %% ========================================================================
-%  4. SCALP-MAP DATA (strict two-stage filter)
+%  4. SCALP-MAP DATA (progressive filtering across three panels)
 %  ========================================================================
+%
+%  Panel 1: R^2_free for ALL channels (no filter) — where does the model fit?
+%  Panel 2: tau* for channels with tau* in [2, 6] s — timing gradient
+%  Panel 3: Trough magnitude for channels passing both tau*-range AND
+%           R^2_lock >= 0.70 — effect size in the best-fit region
+%
+%  Each panel adds one filter; annotations explain the progressive narrowing.
 
-df = readtable(csvFile);
+df      = readtable(csvFile);
+N_TOTAL = height(df);
 
-mask_tau_ok = (df.tau_star >= TAU_LO) & (df.tau_star <= TAU_HI);
-mask_r2_ok  = df.R2_lock >= R2_MIN;
-keep        = mask_tau_ok & mask_r2_ok;
+% --- Matching helper: build chanlocs + aligned data for a channel subset ---
+buildChanlocs = @(names) matchToMontage(names, allLocs, allLabelsStd);
 
-N_TOTAL     = height(df);
-N_DROP_TAU  = sum(~mask_tau_ok);
-N_AFTER_TAU = N_TOTAL - N_DROP_TAU;
-N_DROP_R2   = sum(mask_tau_ok & ~mask_r2_ok);
-N_KEPT      = sum(keep);
+% Panel 1: ALL channels
+[locs_all, mask_all] = buildChanlocs(df.channel);
+R2_free_all          = df.R2_free(mask_all);
+N_ALL                = sum(mask_all);
 
-fprintf('\nStrict filter:  start = %d,  dropped by tau*-range = %d -> %d remain,  dropped by R^2 cutoff = %d -> %d retained.\n', ...
-    N_TOTAL, N_DROP_TAU, N_AFTER_TAU, N_DROP_R2, N_KEPT);
+fprintf('\nPanel 1 (R^2 free): %d/%d channels matched to montage\n', N_ALL, N_TOTAL);
 
-kept     = df(keep, :);
-ch_names = kept.channel;
+% Panel 2: filter by tau* range only
+mask_tau          = (df.tau_star >= TAU_LO) & (df.tau_star <= TAU_HI);
+df_tau            = df(mask_tau, :);
+N_DROP_TAU        = sum(~mask_tau);
+N_AFTER_TAU       = sum(mask_tau);
+[locs_tau, mask_tau_m] = buildChanlocs(df_tau.channel);
+tau_vals          = df_tau.tau_star(mask_tau_m);
+N_TAU             = sum(mask_tau_m);
 
-tau_vals     = kept.tau_star;
-R2_lock_vals = kept.R2_lock;
-A_lock_vals  = kept.A_lock;
+fprintf('Panel 2 (tau*):     %d channels after tau*-range filter (dropped %d)\n', N_TAU, N_DROP_TAU);
 
-% Build EEGLAB chanlocs for the filtered channel set, keeping only
-% channels that have a match in the standard montage.  Both the location
-% array AND the data vectors must be pruned identically to stay aligned.
-matched = false(numel(ch_names), 1);
-chanlocs = allLocs([]);
-for i = 1:numel(ch_names)
-    idx = find(strcmpi(allLabelsStd, ch_names{i}), 1);
-    if ~isempty(idx)
-        matched(i)   = true;
-        chanlocs(end+1) = allLocs(idx); %#ok<SAGROW>
-    else
-        fprintf('  WARNING: channel "%s" not found in standard montage — dropped.\n', ch_names{i});
-    end
-end
-% Align data vectors with matched chanlocs
-tau_vals      = tau_vals(matched);
-R2_lock_vals  = R2_lock_vals(matched);
-A_lock_vals   = A_lock_vals(matched);
-N_KEPT        = sum(matched);
-fprintf('Matched %d/%d filtered channels to standard montage\n', ...
-    length(chanlocs), numel(ch_names));
+% Panel 3: filter by tau* range AND R^2_lock
+mask_strict       = mask_tau & (df.R2_lock >= R2_MIN);
+df_strict         = df(mask_strict, :);
+N_DROP_R2         = sum(mask_tau & ~(df.R2_lock >= R2_MIN));
+N_STRICT          = sum(mask_strict);
+[locs_strict, mask_str_m] = buildChanlocs(df_strict.channel);
+A_lock_vals       = df_strict.A_lock(mask_str_m);
+N_KEPT            = sum(mask_str_m);
 
-% Signed trough magnitude (computed AFTER alignment filtering)
-trough_shape  = (1.0 / E) * exp(-1.0);
-trough_signed = A_lock_vals * trough_shape;
+trough_shape      = (1.0 / E) * exp(-1.0);
+trough_signed     = A_lock_vals * trough_shape;
+
+fprintf('Panel 3 (trough):   %d channels after R^2_lock >= %.2f filter (dropped %d more)\n', ...
+    N_KEPT, R2_MIN, N_DROP_R2);
 
 %% ========================================================================
 %  5. FIGURE
@@ -228,44 +227,69 @@ x3 = ml + 2*(pw_top + gap_h);
 
 %% ---- TOP ROW: three scalp maps (EEGLAB topoplot) ----
 
-% Panel (i): tau*
-ax_topo1 = axes('Position', [x1, row_top_y, pw_top, ph_top]);
-topoplot(tau_vals, chanlocs, 'maplimits', [TAU_LO TAU_HI], ...
-    'numcontour', 6, 'electrodes', 'ptslabels', 'efontsize', 6, ...
-    'style', 'fill', 'conv', 'off');
-colormap(ax_topo1, coolwarm_cmap(256));
-title('\tau^{*}  (s)', 'FontSize', font_sz_title);
-cb1 = colorbar('southoutside'); cb1.Label.String = '\tau^{*} (s)'; cb1.FontSize = 7;
-text(0.5, -0.08, sprintf('filter: \\tau^{*} \\in [%.0f, %.0f] s  (drops %d/%d ch.)', ...
-    TAU_LO, TAU_HI, N_DROP_TAU, N_TOTAL), ...
-    'Units', 'normalized', 'HorizontalAlignment', 'center', ...
-    'FontSize', font_sz_annot, 'Parent', ax_topo1);
+% Strategy: EEGLAB topoplot uses the *figure-level* colormap, so per-axes
+% colormaps have no effect.  freezeTopoColors (converting indexed CData to
+% true-colour RGB) fails on some of topoplot's patch types.
+%
+% Robust workaround: render each topoplot in its own temporary figure with
+% the correct colormap, capture as an RGB image via print(), then place
+% the rasterised image into the main figure.  Each temp figure is an
+% independent colormap scope, so there is no cross-panel contamination.
 
-% Panel (ii): R^2 at locked tau
-ax_topo2 = axes('Position', [x2, row_top_y, pw_top, ph_top]);
-topoplot(R2_lock_vals, chanlocs, 'maplimits', [R2_MIN max(R2_lock_vals)], ...
-    'numcontour', 6, 'electrodes', 'ptslabels', 'efontsize', 6, ...
-    'style', 'fill', 'conv', 'off');
-colormap(ax_topo2, flipud(magma_cmap(256)));
-title(sprintf('R^2 at locked \\tau = %.2f s', TAU_LOCKED), 'FontSize', font_sz_title);
-cb2 = colorbar('southoutside'); cb2.Label.String = 'R^2'; cb2.FontSize = 7;
-text(0.5, -0.08, sprintf('filter: R^2 \\geq %.2f  (drops %d/%d remaining)', ...
-    R2_MIN, N_DROP_R2, N_AFTER_TAU), ...
-    'Units', 'normalized', 'HorizontalAlignment', 'center', ...
-    'FontSize', font_sz_annot, 'Parent', ax_topo2);
+TOPO_DPI = 300;
 
-% Panel (iii): signed trough magnitude
-ax_topo3 = axes('Position', [x3, row_top_y, pw_top, ph_top]);
-tm_max = max(abs(trough_signed));
-topoplot(trough_signed, chanlocs, 'maplimits', [-tm_max 0], ...
-    'numcontour', 6, 'electrodes', 'ptslabels', 'efontsize', 6, ...
-    'style', 'fill', 'conv', 'off');
-colormap(ax_topo3, magma_cmap(256));
-title('Signed trough magnitude  A \cdot s(1/e)', 'FontSize', font_sz_title);
-cb3 = colorbar('southoutside'); cb3.Label.String = '\muV (trough, < 0)'; cb3.FontSize = 7;
-text(0.5, -0.08, sprintf('%d/%d channels retained; \\muV', N_KEPT, N_TOTAL), ...
-    'Units', 'normalized', 'HorizontalAlignment', 'center', ...
-    'FontSize', font_sz_annot, 'Parent', ax_topo3);
+topoSpecs = { ...
+    R2_free_all, locs_all,    viridis_cmap(256),  [0 1],               ...
+        'R^2_{free}  (best-fit quality)', 'R^2', ...
+        sprintf('all %d channels; free \\tau^{*} per channel', N_ALL);
+    tau_vals,    locs_tau,     coolwarm_cmap(256),  [TAU_LO TAU_HI],    ...
+        '\tau^{*}  (s)', '\tau^{*} (s)', ...
+        sprintf('filter: \\tau^{*} \\in [%.0f, %.0f] s  (%d/%d ch.)', TAU_LO, TAU_HI, N_TAU, N_TOTAL);
+    trough_signed, locs_strict, magma_cmap(256),   [-max(abs(trough_signed)) 0], ...
+        'Signed trough magnitude  A \cdot s(1/e)', '\muV (trough, < 0)', ...
+        sprintf('+ R^2_{lock} \\geq %.2f  (%d/%d ch.)', R2_MIN, N_KEPT, N_TOTAL) ...
+};
+
+ax_topos = gobjects(3,1);
+xPositions = [x1, x2, x3];
+
+for ip = 1:3
+    vals   = topoSpecs{ip, 1};
+    locs   = topoSpecs{ip, 2};
+    cmap   = topoSpecs{ip, 3};
+    mlims  = topoSpecs{ip, 4};
+    ttl    = topoSpecs{ip, 5};
+    cblbl  = topoSpecs{ip, 6};
+    annot  = topoSpecs{ip, 7};
+
+    % --- Render in a temporary figure ---
+    tmpFig = figure('Units', 'pixels', 'Position', [100 100 500 550], ...
+        'Color', 'w', 'Visible', 'off');
+    colormap(tmpFig, cmap);
+    tmpAx = axes('Parent', tmpFig, 'Position', [0.05 0.15 0.90 0.78]);
+    topoplot(vals, locs, 'maplimits', mlims, ...
+        'numcontour', 6, 'electrodes', 'ptslabels', 'efontsize', 8, ...
+        'style', 'fill', 'conv', 'off');
+    title(ttl, 'FontSize', font_sz_title);
+    cb = colorbar('southoutside');
+    cb.Label.String = cblbl; cb.FontSize = 8;
+
+    % Capture as RGB image
+    drawnow;
+    frame = print(tmpFig, '-RGBImage', sprintf('-r%d', TOPO_DPI));
+    close(tmpFig);
+
+    % --- Place captured image into main figure ---
+    ax_topos(ip) = axes('Position', [xPositions(ip), row_top_y, pw_top, ph_top], ...
+        'Parent', fig);
+    image(frame, 'Parent', ax_topos(ip));
+    axis(ax_topos(ip), 'image', 'off');
+
+    % Annotation below the image
+    text(0.5, -0.02, annot, ...
+        'Units', 'normalized', 'HorizontalAlignment', 'center', ...
+        'FontSize', font_sz_annot, 'Parent', ax_topos(ip));
+end
 
 %% ---- BOTTOM ROW: parietal L/R time courses + S(x) fits ----
 
@@ -330,7 +354,7 @@ hold(ax_bot, 'off');
 
 %% ---- Panel letters and suptitle ----
 
-text(ax_topo1, -0.08, 1.08, 'A', 'Units', 'normalized', ...
+text(ax_topos(1), -0.08, 1.08, 'A', 'Units', 'normalized', ...
     'FontSize', font_sz_panel, 'FontWeight', 'bold');
 text(ax_bot, -0.04, 1.08, 'B', 'Units', 'normalized', ...
     'FontSize', font_sz_panel, 'FontWeight', 'bold');
@@ -343,7 +367,9 @@ sgtitle(sprintf('Figure 2 -- Neural evidence  (N = %d participants)', n_part), .
 %  ========================================================================
 
 exportgraphics(fig, outPDF, 'ContentType', 'vector', 'BackgroundColor', 'w');
-fprintf('Saved: %s\n', outPDF);
+exportgraphics(fig, outPNG, 'Resolution', 300, 'BackgroundColor', 'w');
+fprintf('Saved: %s (vector PDF)\n', outPDF);
+fprintf('Saved: %s (300 dpi PNG)\n', outPNG);
 fprintf('\nDone.\n');
 
 %% ========================================================================
@@ -444,3 +470,19 @@ function cmap = magma_cmap(n)
     xq = linspace(0.30, 1, n);
     cmap = interp1(xi, anchors, xq);
 end
+
+function [locs, matched] = matchToMontage(ch_names, allLocs, allLabelsStd)
+% matchToMontage  Build EEGLAB chanlocs for a channel subset.
+%   Returns the matched chanlocs struct and a logical mask into ch_names
+%   indicating which channels were found in the standard montage.
+    matched = false(numel(ch_names), 1);
+    locs    = allLocs([]);
+    for i = 1:numel(ch_names)
+        idx = find(strcmpi(allLabelsStd, ch_names{i}), 1);
+        if ~isempty(idx)
+            matched(i)  = true;
+            locs(end+1) = allLocs(idx); %#ok<AGROW>
+        end
+    end
+end
+
