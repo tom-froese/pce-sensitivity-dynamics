@@ -1,8 +1,0 @@
-ROI,n_part,A_uV,B_uV,R2,RMSE_uV,n_fit,png,pdf
-Prefrontal,62,-147.4640446629615,-16.43857395375836,0.6017534296209677,3.520832239374142,527,results/FigureS2_GSP_Prefrontal_LockedTau.png,results/FigureS2_GSP_Prefrontal_LockedTau.pdf
-Frontal,62,-133.31712256121352,-16.204650251344308,0.5390502549981335,3.61818316603969,527,results/FigureS2_GSP_Frontal_LockedTau.png,results/FigureS2_GSP_Frontal_LockedTau.pdf
-Fronto-Central,62,-81.07434715771089,1.7202050488675429,0.6956179239804867,1.5739831226048637,527,results/FigureS2_GSP_FrontoCentral_LockedTau.png,results/FigureS2_GSP_FrontoCentral_LockedTau.pdf
-Central,62,-100.4258458553655,0.8565325595444887,0.6545236455938747,2.1413341718473102,527,results/FigureS2_GSP_Central_LockedTau.png,results/FigureS2_GSP_Central_LockedTau.pdf
-Centro-Parietal,62,-53.36223481181847,7.577966472549222,0.7328208396809035,0.9456465660885754,527,results/FigureS2_GSP_CentroParietal_LockedTau.png,results/FigureS2_GSP_CentroParietal_LockedTau.pdf
-Parietal,62,-57.85592143723696,10.562098825524576,0.8228381963105229,0.7878945476671434,527,results/FigureS2_GSP_Parietal_LockedTau.png,results/FigureS2_GSP_Parietal_LockedTau.pdf
-Occipital,62,-48.68889525577078,10.988758812696586,0.6179208761758517,1.1236539861203356,527,results/FigureS2_GSP_Occipital_LockedTau.png,results/FigureS2_GSP_Occipital_LockedTau.pdf

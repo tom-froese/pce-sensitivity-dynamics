@@ -21,8 +21,12 @@ data/preprocessed/Haptics/HapticFeedback.csv
 
 zenodo_README.md
 
-# Scratch/exploration files
-code/analysis/_scratch/
+# Claude settings
+data/.claude/
 
 # Preprocessed data archive (available on Zenodo)
 data/preprocessed.zip
+
+# Preprocessed EEG data — regeneratable via preprocessing scripts
+data/preprocessed/EEG/*.mat
+data/preprocessed/EEG/*.npz

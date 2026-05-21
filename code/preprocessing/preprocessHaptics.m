@@ -1,4 +1,3 @@
-clear; clc;
 %% preprocessHaptics.m
 % =========================================================================
 % Haptic Feedback Preprocessing and CSV/JSON Export Script

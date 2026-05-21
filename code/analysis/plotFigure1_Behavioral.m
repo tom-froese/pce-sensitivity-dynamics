@@ -37,15 +37,13 @@
 %   ../../data/preprocessed/EEG/globalScalpPotential_stats.mat  (for dissociation)
 %
 % OUTPUT:
-%   ../../results/Figure1_Behavioral.png  (600 dpi)
+%   ../../results/Figure1_Behavioral.pdf  (vector PDF)
 %
 % DEPENDENCIES: Signal Processing Toolbox, Optimization Toolbox
 %
 % AUTHOR: Embodied Cognitive Science Unit, OIST
 % DATE:   April 2026
 % =========================================================================
-
-clear; clc; close all;
 
 %% ========================================================================
 %  0. DATA PATHS AND AVAILABILITY CHECK
@@ -602,9 +600,9 @@ set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out');
 %  SAVE
 %  ========================================================================
 
-outFile = '../../results/Figure1_Behavioral.png';
-exportgraphics(fig, outFile, 'Resolution', 600);
-fprintf('  Saved: %s (600 dpi)\n', outFile);
+outFile = '../../results/Figure1_Behavioral.pdf';
+exportgraphics(fig, outFile, 'ContentType', 'vector');
+fprintf('  Saved: %s (vector PDF)\n', outFile);
 
 %% ========================================================================
 %  SUMMARY

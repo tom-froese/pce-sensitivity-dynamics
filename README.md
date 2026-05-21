@@ -2,7 +2,7 @@
 
 Code and data for:
 
-> **Clock-free optimal stopping in social cognition: Stochastic sensitivity dynamics predict behavioral, neural, and perceptual transition timing**
+> **Clock-free optimal stopping in decision-making: Stochastic sensitivity dynamics predict behavioral, neural, and perceptual transition timing**
 >
 > Tom Froese (2026). *Under review.*
 
@@ -16,30 +16,29 @@ This sensitivity function peaks at *x* = 1/*e*, the optimal stopping point of th
 
 ## Quick Start
 
-From MATLAB (R2023b or later), run each figure script from `code/analysis/`:
+### One-command reproduction
 
+In MATLAB:
 ```matlab
-cd code/analysis
-plotFigure1_Behavioral   % Figure 1: Click times + haptics + EDA
-plotFigure2_Neural       % Figure 2: ROI sensitivity model fits
-plotFigure3_Perceptual   % Figure 3: Sensitivity schematic + PAS clarity
+reproduce            % from preprocessed data (default)
+reproduce('raw')     % from raw data (requires data/raw/)
 ```
 
-All three scripts use relative paths and output 600 dpi PNG files to `results/`.
+### Prerequisites
+
+- MATLAB R2022a or later with Statistics and Optimization toolboxes
+- [EEGLAB](https://sccn.ucsd.edu/eeglab/) (for topographic scalp maps)
 
 ## Data
 
 ### Preprocessed data (included in this repository; also archived on Zenodo)
-
-The figure scripts load these precomputed files directly:
 
 | Directory | Contents | Size |
 |-----------|----------|------|
 | `data/preprocessed/ClickTimes/` | Click response times (CSV + JSON sidecar) | 32 KB |
 | `data/preprocessed/Haptics/` | Haptic feedback time series (gzipped CSV) | 18 MB |
 | `data/preprocessed/EDA/` | Electrodermal activity (CSV + JSON sidecars) | 50 MB |
-| `data/preprocessed/PAS/` | PAS sensitivity and crossover analysis (MAT) | 40 KB |
-| `data/preprocessed/EEG/` | Global scalp potential data and statistics (MAT) | 7 MB |
+| `data/preprocessed/EEG/` | Global scalp potential, per-channel, and parietal hemisphere data (MAT files) | 7 MB |
 
 These files are also archived on Zenodo: [10.5281/zenodo.19425014](https://doi.org/10.5281/zenodo.19425014). To set up from the Zenodo archive, download `preprocessed.zip` and unzip it into `data/`.
 
@@ -49,94 +48,68 @@ The raw experimental data is archived on OSF as part of the [Perceptual Crossing
 
 | Directory | OSF source | Size |
 |-----------|------------|------|
-| `data/raw/Behavior/` | [osf.io/7hfec](https://osf.io/7hfec) — behavioral data (32 dyad folders) | ~1.8 GB |
+| `data/raw/Behavior/` | [osf.io/7hfec](https://osf.io/7hfec) | ~1.8 GB |
 | `data/raw/EDA/` | [osf.io/47n3p](https://osf.io/47n3p) — Peripheral Physiological Data / EDA.zip | ~38 MB |
 | `data/raw/EEG/` | [osf.io/47n3p](https://osf.io/47n3p) — Raw EEG Hyperscanning Data (32 per-dyad zips) | ~15 GB |
-
-After downloading, your `data/raw/` directory should contain `Behavior/`, `EDA/`, and `EEG/` subfolders, each with `pce*` experiment folders inside.
-
-## Toolbox Requirements
-
-- Signal Processing Toolbox (filtering, spectral estimation)
-- Statistics and Machine Learning Toolbox (logistic regression, permutation tests)
-- Optimization Toolbox (curve fitting in Figure 1 Panels B and C)
-
-No third-party packages are required.
 
 ## Repository Structure
 
 ```
 pce-sensitivity-dynamics/
+├── reproduce.m                         # Master reproduction script
 ├── code/
-│   ├── analysis/                    # Figure generation scripts
-│   │   ├── plotFigure1_Behavioral.m # Fig 1: clicks + haptics + EDA
-│   │   ├── plotFigure2_Neural.m     # Fig 2: ROI sensitivity fits
-│   │   └── plotFigure3_Perceptual.m # Fig 3: sensitivity + PAS
-│   └── preprocessing/               # Data extraction pipelines
-│       ├── preprocessClicks.m       # Click response times from raw trials
-│       ├── preprocessHaptics.m      # Haptic feedback from raw trials
-│       ├── preprocessEDA.m          # Electrodermal activity from raw EDA
-│       ├── preprocessPAS.m          # PAS ratings from questionnaires
-│       ├── preprocessGSP.m         # Global scalp potential from raw EEG
-│       ├── computeGSPStats.m        # Hierarchical sensitivity model fits
-│       ├── computePASSensitivity.m  # PAS early vs. late analysis
-│       └── computePASCrossover.m    # PAS 4/3 crossover + ROI mapping
+│   ├── analysis/                       # Figure generation and statistics
+│   │   ├── plotFigure1_Behavioral.m    # Fig 1: clicks + haptics + EDA
+│   │   ├── plotFigure2_Neural.m        # Fig 2: EEG sensitivity fits
+│   │   ├── computePASCrossover.m       # PAS 4/3 logistic crossover stats
+│   │   └── plotFigure3_Perceptual.m    # Fig 3: sensitivity + PAS
+│   └── preprocessing/                  # Data extraction pipelines
+│       ├── preprocessClicks.m          # Click response times from raw trials
+│       ├── preprocessHaptics.m         # Haptic feedback from raw trials
+│       ├── preprocessEDA.m             # Electrodermal activity from raw EDA
+│       ├── preprocessGSP.m            # Global scalp potential from raw EEG
+│       ├── computeGSPStats.m           # Hierarchical sensitivity model fits
+│       ├── extractAllChannels.m        # All 64 EEG channels from raw MAT
+│       ├── extractParietalHemispheres.m  # L/R parietal cluster extraction
+│       ├── computePerChannelFits.m     # Per-channel free-tau + locked-tau fits
+│       └── computePASProportions.m     # Unsmoothed disjoint-bin PAS proportions
 ├── data/
-│   ├── preprocessed/                # Tracked in git (included in repo)
-│   │   ├── ClickTimes/              # Behavioral responses
-│   │   ├── EDA/                     # Electrodermal activity (task + rest)
-│   │   ├── EEG/                     # Neural data (MAT files)
-│   │   ├── Haptics/                 # Haptic feedback time series
-│   │   └── PAS/                     # Perceptual awareness analysis
-│   └── raw/                         # NOT tracked (download from OSF)
-│       ├── Behavior/                # Raw trial CSVs + questionnaires
-│       ├── EDA/                     # Raw EDA .mat files
-│       └── EEG/                     # Raw EEG .mat files
-├── results/                         # Publication figures (600 dpi PNG)
+│   ├── preprocessed/                   # Tracked in git (included in repo)
+│   │   ├── ClickTimes/                 # Behavioral responses
+│   │   ├── EDA/                        # Electrodermal activity (task + rest)
+│   │   ├── EEG/                        # Neural data (MAT files)
+│   │   └── Haptics/                    # Haptic feedback time series
+│   └── raw/                            # NOT tracked (download from OSF)
+├── results/                            # Generated figures and intermediate CSVs
 ├── README.md
-├── LICENSE                          # MIT
+├── LICENSE                             # MIT
 └── CITATION.cff
 ```
 
-## Preprocessing
+## Preprocessing Pipeline
 
-The figure scripts load precomputed data files included in `data/preprocessed/`. The preprocessing scripts document how these files were generated from raw experimental data.
+The master script `reproduce.m` runs these steps in order:
 
-To reproduce from scratch, download the raw data from OSF (see above) into `data/raw/`, then run from `code/preprocessing/`:
+| Step | Script | Output |
+|------|--------|--------|
+| 1a | `preprocessClicks.m` | `data/preprocessed/ClickTimes/` |
+| 1b | `preprocessHaptics.m` | `data/preprocessed/Haptics/` |
+| 1c | `preprocessEDA.m` | `data/preprocessed/EDA/` |
+| 1d | `preprocessGSP.m` | `data/preprocessed/EEG/globalScalpPotential_data.mat` |
+| 1e | `computeGSPStats.m` | `data/preprocessed/EEG/globalScalpPotential_stats.mat` |
+| 1f | `extractAllChannels.m` | `data/preprocessed/EEG/allchannel_data.mat` |
+| 1g | `extractParietalHemispheres.m` | `data/preprocessed/EEG/parietal_hemisphere_data.mat` |
+| 1h | `computePerChannelFits.m` | `results/FigureS2_GSP_TopoMap_FreeTau_perchannel.csv` |
+| 1i | `computePASProportions.m` | `results/pas_unsmoothed_proportions.csv` |
 
-```matlab
-cd code/preprocessing
+### Analysis and Figure Generation
 
-% Step 1: Extract behavioral data (independent, from raw trial CSVs)
-preprocessClicks       % -> data/preprocessed/ClickTimes/
-preprocessHaptics      % -> data/preprocessed/Haptics/
-
-% Step 2: Preprocess physiological signals
-preprocessEDA          % -> data/preprocessed/EDA/
-
-% Step 3: Extract perceptual awareness ratings
-preprocessPAS          % -> data/preprocessed/PAS/
-
-% Step 4: Extract global scalp potential from raw EEG
-preprocessGSP          % -> data/preprocessed/EEG/globalScalpPotential_data.mat
-
-% Step 5: Compute sensitivity model statistics
-computeGSPStats        % -> data/preprocessed/EEG/globalScalpPotential_stats.mat
-
-% Step 6: PAS analysis (requires steps 1, 2, 5)
-computePASSensitivity  % -> data/preprocessed/PAS/gsp_sensitivity_pas.mat
-computePASCrossover    % -> data/preprocessed/PAS/gsp_pas_roi_crossover.mat
-```
-
-All preprocessing scripts use `mfilename('fullpath')` to resolve paths, so they work regardless of MATLAB's current directory.
-
-## Figures
-
-**Figure 1 -- Bodily Evidence for Reliability Decay Dynamics.** Three panels: (A) Click response-time distribution fitted by the sensitivity function S(x); (B) Haptic contact proportion saturating at 1/e; (C) Electrodermal activity following the reliability function R(x) = exp(-e*x).
-
-**Figure 2 -- Neural Evidence: Sensitivity Model Fits by Brain Region.** Seven ROI time courses with continuous anterior-to-posterior color gradient, showing the spatial distribution of sensitivity dynamics in the global scalp potential.
-
-**Figure 3 -- Perceptual Evidence: Sensitivity Dynamics and PAS.** Two panels: (A) Theoretical sensitivity of R(x) to rate perturbations, with rejection and selection phases; (B) Moving-window PAS ratings with bootstrap crossover CI and ROI trough markers.
+| Step | Script | Output |
+|------|--------|--------|
+| 2a | `plotFigure1_Behavioral.m` | `results/Figure1_Behavioral.png` |
+| 2b | `plotFigure2_Neural.m` | `results/Figure2_Neural.pdf` |
+| 2c | `computePASCrossover.m` | `results/pas_crossover_stats.csv` |
+| 2d | `plotFigure3_Perceptual.m` | `results/Figure3_Perceptual.pdf` |
 
 ## Dataset
 
