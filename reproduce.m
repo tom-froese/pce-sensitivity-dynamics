@@ -6,7 +6,7 @@ function reproduce(fromRaw)
 %
 % Prerequisites:
 %   MATLAB R2022a or later with Statistics and Optimization toolboxes
-%   EEGLAB (https://sccn.ucsd.edu/eeglab/)
+%   Python 3.9+ with MNE-Python, matplotlib, numpy, pandas, scipy
 %
 % Data:
 %   Preprocessed: https://doi.org/10.5281/zenodo.19425014
@@ -98,7 +98,17 @@ runStep(prepDir, 'computePerChannelFits', '2a', 'Per-channel sensitivity fits');
 fprintf('\n--- Step 3: Generating manuscript figures ---\n');
 
 runStep(anaDir, 'plotFigure1_Behavioral', '3a', 'Figure 1: Behavioral and bodily evidence');
-runStep(anaDir, 'plotFigure2_Neural',     '3b', 'Figure 2: Neural evidence');
+
+fprintf('  [3b] Figure 2: Neural evidence (Python/MNE)...\n');
+t0_py = tic;
+pyScript = fullfile(anaDir, 'plotFigure2_Neural.py');
+[status, cmdout] = system(sprintf('python3 "%s"', pyScript));
+if status ~= 0
+    error('Python script failed:\n%s', cmdout);
+end
+fprintf('%s', cmdout);
+fprintf('  [3b] Done (%.1f s)\n\n', toc(t0_py));
+
 runStep(anaDir, 'computePASCrossover',    '3c', 'PAS crossover statistics');
 runStep(anaDir, 'plotFigure3_Perceptual', '3d', 'Figure 3: Perceptual evidence');
 

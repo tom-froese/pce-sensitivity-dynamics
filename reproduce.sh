@@ -8,6 +8,7 @@
 #
 # Prerequisites:
 #   MATLAB (R2022a or later) with Statistics and Optimization toolboxes
+#   Python 3.9+ with MNE-Python, matplotlib, numpy, pandas, scipy
 #
 # Data:
 #   Preprocessed: https://doi.org/10.5281/zenodo.19425014
@@ -108,8 +109,8 @@ echo "--- Step 2: Generating manuscript figures ---"
 echo "  [2a] Figure 1: Behavioral and bodily evidence..."
 matlab -batch "cd('code/analysis'); plotFigure1_Behavioral"
 
-echo "  [2b] Figure 2: Neural evidence..."
-matlab -batch "cd('code/analysis'); plotFigure2_Neural"
+echo "  [2b] Figure 2: Neural evidence (Python/MNE)..."
+python3 code/analysis/plotFigure2_Neural.py
 
 echo "  [2c] PAS crossover statistics..."
 matlab -batch "cd('code/analysis'); computePASCrossover"
