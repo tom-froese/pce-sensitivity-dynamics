@@ -21,7 +21,7 @@
 %   data/raw/Behavior/pce*/questionnaires/pair_*_PAS_confidence_absence.csv
 %
 % OUTPUT:
-%   results/pas_unsmoothed_proportions.csv
+%   results/Figure3_pas_proportions.csv
 %     columns: bin_center, pas_level, grand_prop, grand_sem, n_participants
 %
 % AUTHOR: Embodied Cognitive Science Unit, OIST
@@ -153,7 +153,7 @@ end
 outTbl = array2table(outRows, 'VariableNames', ...
     {'bin_center', 'pas_level', 'grand_prop', 'grand_sem', 'n_participants'});
 
-outFile = fullfile(resDir, 'pas_unsmoothed_proportions.csv');
+outFile = fullfile(resDir, 'Figure3_pas_proportions.csv');
 writetable(outTbl, outFile);
 fprintf('\nWrote: %s\n', outFile);
 disp(outTbl(1:12, :));

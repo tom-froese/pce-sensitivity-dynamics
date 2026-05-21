@@ -18,7 +18,7 @@ Two-row, three-column figure:
 
 INPUTS:
   data/preprocessed/EEG/allchannel_data.mat  (scipy format)
-  results/FigureS2_GSP_TopoMap_FreeTau_perchannel.csv
+  results/Figure2_perchannel_fits.csv
 
 OUTPUTS:
   results/Figure2_Neural.pdf  (vector)
@@ -42,7 +42,7 @@ import scipy.io as sio
 # -----------------------------------------------------------------------
 HERE    = Path(__file__).resolve().parent
 ROOT    = HERE.parent.parent
-CSV     = ROOT / 'results' / 'FigureS2_GSP_TopoMap_FreeTau_perchannel.csv'
+CSV     = ROOT / 'results' / 'Figure2_perchannel_fits.csv'
 OUT_PNG = ROOT / 'results' / 'Figure2_Neural.png'
 OUT_PDF = ROOT / 'results' / 'Figure2_Neural.pdf'
 

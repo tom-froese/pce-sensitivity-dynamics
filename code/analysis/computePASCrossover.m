@@ -21,7 +21,7 @@
 %   data/raw/Behavior/pce*/questionnaires/pair_*_PAS_confidence_absence.csv
 %
 % OUTPUT:
-%   results/pas_crossover_stats.csv
+%   results/Figure3_crossover_stats.csv
 %
 % AUTHOR: Embodied Cognitive Science Unit, OIST
 % DATE:   May 2026
@@ -225,6 +225,6 @@ results = table( ...
     'n_early_late', 'early_pas4_prop', 'late_pas4_prop', ...
     'early_late_t', 'early_late_p', 'early_late_dz'});
 
-outFile = fullfile(resDir, 'pas_crossover_stats.csv');
+outFile = fullfile(resDir, 'Figure3_crossover_stats.csv');
 writetable(results, outFile);
 fprintf('Saved: %s\n', outFile);

@@ -19,7 +19,7 @@
 %     variables: tTask (1x600), chans (1x64 cell), allTC (62x64x600)
 %
 % OUTPUTS:
-%   ../../results/FigureS2_GSP_TopoMap_FreeTau_perchannel.csv
+%   ../../results/Figure2_perchannel_fits.csv
 %
 % AUTHOR: Embodied Cognitive Science Unit, OIST
 % DATE:   May 2026
@@ -32,7 +32,7 @@
 scriptDir = fileparts(mfilename('fullpath'));
 ROOT      = fullfile(scriptDir, '..', '..');
 dataFile  = fullfile(ROOT, 'data', 'preprocessed', 'EEG', 'allchannel_data.mat');
-outCSV    = fullfile(ROOT, 'results', 'FigureS2_GSP_TopoMap_FreeTau_perchannel.csv');
+outCSV    = fullfile(ROOT, 'results', 'Figure2_perchannel_fits.csv');
 
 if ~isfile(dataFile)
     error('Missing: %s\nRun extractAllChannels first.', dataFile);

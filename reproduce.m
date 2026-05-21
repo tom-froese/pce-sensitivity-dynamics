@@ -66,7 +66,7 @@ else
         'data/preprocessed/EEG/globalScalpPotential_stats.mat'
         'data/preprocessed/EEG/allchannel_data.mat'
         'data/preprocessed/EEG/parietal_hemisphere_data.mat'
-        'results/pas_unsmoothed_proportions.csv'
+        'results/Figure3_pas_proportions.csv'
     };
 
     missing = false;

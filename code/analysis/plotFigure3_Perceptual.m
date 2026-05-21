@@ -12,8 +12,8 @@
 %   (The sensitivity schematic formerly in Panel A is now in Figure 2.)
 %
 % INPUT:
-%   ../../results/pas_unsmoothed_proportions.csv
-%   ../../results/pas_crossover_stats.csv  (from computePASCrossover.m)
+%   ../../results/Figure3_pas_proportions.csv
+%   ../../results/Figure3_crossover_stats.csv  (from computePASCrossover.m)
 %
 % OUTPUT:
 %   ../../results/Figure3_Perceptual.pdf  (vector PDF)
@@ -31,8 +31,8 @@ scriptDir = fileparts(mfilename('fullpath'));
 ROOT      = fullfile(scriptDir, '..', '..');
 resDir    = fullfile(ROOT, 'results');
 
-unsmFile  = fullfile(resDir, 'pas_unsmoothed_proportions.csv');
-xoverFile = fullfile(resDir, 'pas_crossover_stats.csv');
+unsmFile  = fullfile(resDir, 'Figure3_pas_proportions.csv');
+xoverFile = fullfile(resDir, 'Figure3_crossover_stats.csv');
 
 for f = {unsmFile, xoverFile}
     if ~isfile(f{1})

@@ -82,8 +82,8 @@ else
         data/preprocessed/EEG/globalScalpPotential_stats.mat \
         data/preprocessed/EEG/allchannel_data.mat \
         data/preprocessed/EEG/parietal_hemisphere_data.mat \
-        results/FigureS2_GSP_TopoMap_FreeTau_perchannel.csv \
-        results/pas_unsmoothed_proportions.csv; do
+        results/Figure2_perchannel_fits.csv \
+        results/Figure3_pas_proportions.csv; do
         if [ ! -f "$f" ]; then
             echo "  MISSING: $f"
             MISSING=true

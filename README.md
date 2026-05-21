@@ -99,17 +99,17 @@ The master script `reproduce.m` runs these steps in order:
 | 1e | `computeGSPStats.m` | `data/preprocessed/EEG/globalScalpPotential_stats.mat` |
 | 1f | `extractAllChannels.m` | `data/preprocessed/EEG/allchannel_data.mat` |
 | 1g | `extractParietalHemispheres.m` | `data/preprocessed/EEG/parietal_hemisphere_data.mat` |
-| 1h | `computePerChannelFits.m` | `results/FigureS2_GSP_TopoMap_FreeTau_perchannel.csv` |
-| 1i | `computePASProportions.m` | `results/pas_unsmoothed_proportions.csv` |
+| 1h | `computePerChannelFits.m` | `results/Figure2_perchannel_fits.csv` |
+| 1i | `computePASProportions.m` | `results/Figure3_pas_proportions.csv` |
 
 ### Analysis and Figure Generation
 
 | Step | Script | Output |
 |------|--------|--------|
-| 2a | `plotFigure1_Behavioral.m` | `results/Figure1_Behavioral.png` |
-| 2b | `plotFigure2_Neural.m` | `results/Figure2_Neural.pdf` |
-| 2c | `computePASCrossover.m` | `results/pas_crossover_stats.csv` |
-| 2d | `plotFigure3_Perceptual.m` | `results/Figure3_Perceptual.pdf` |
+| 2a | `plotFigure1_Behavioral.m` | `results/Figure1_Behavioral.{png,pdf}` |
+| 2b | `plotFigure2_Neural.py` | `results/Figure2_Neural.{png,pdf}` |
+| 2c | `computePASCrossover.m` | `results/Figure3_crossover_stats.csv` |
+| 2d | `plotFigure3_Perceptual.m` | `results/Figure3_Perceptual.{png,pdf}` |
 
 ## Dataset
 
