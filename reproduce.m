@@ -52,6 +52,8 @@ if fromRaw
     runStep(prepDir, 'extractParietalHemispheres',    '1g', 'Extracting parietal hemisphere data');
     runStep(prepDir, 'computePerChannelFits',         '1h', 'Computing per-channel sensitivity fits');
     runStep(prepDir, 'computePASProportions',         '1i', 'Computing PAS proportions');
+    runPythonStep(fullfile(prepDir, 'preprocessEEGForExponent.py'), '1j --all', ...
+                  'Preprocessing 250 Hz cleaned EEG for the aperiodic-exponent analysis');
 
     fprintf('\n  Step 1 complete.\n\n');
 else
@@ -66,6 +68,7 @@ else
         'data/preprocessed/EEG/globalScalpPotential_stats.mat'
         'data/preprocessed/EEG/allchannel_data.mat'
         'data/preprocessed/EEG/parietal_hemisphere_data.mat'
+        'data/preprocessed/EEG/pce01/pce01_P1_task-raw.fif'
         'results/Figure3_pas_proportions.csv'
     };
 
@@ -94,20 +97,15 @@ end
 fprintf('--- Step 2: Derived statistics ---\n');
 
 runStep(prepDir, 'computePerChannelFits', '2a', 'Per-channel sensitivity fits');
+runPythonStep(fullfile(anaDir, 'computeAperiodicExponent.py'), '2b', ...
+              'Aperiodic exponent per (participant x within-trial bin) -- FOOOF');
+runPythonStep(fullfile(anaDir, 'fitExponentSensitivity.py'),    '2c', ...
+              'Aperiodic exponent S(x) fit + bootstrap peak CI');
 
 fprintf('\n--- Step 3: Generating manuscript figures ---\n');
 
 runStep(anaDir, 'plotFigure1_Behavioral', '3a', 'Figure 1: Behavioral and bodily evidence');
-
-fprintf('  [3b] Figure 2: Neural evidence (Python/MNE)...\n');
-t0_py = tic;
-pyScript = fullfile(anaDir, 'plotFigure2_Neural.py');
-[status, cmdout] = system(sprintf('python3 "%s"', pyScript));
-if status ~= 0
-    error('Python script failed:\n%s', cmdout);
-end
-fprintf('%s', cmdout);
-fprintf('  [3b] Done (%.1f s)\n\n', toc(t0_py));
+runPythonStep(fullfile(anaDir, 'plotFigure2_Neural.py'), '3b', 'Figure 2: Neural evidence');
 
 runStep(anaDir, 'computePASCrossover',    '3c', 'PAS crossover statistics');
 runStep(anaDir, 'plotFigure3_Perceptual', '3d', 'Figure 3: Perceptual evidence');
@@ -149,4 +147,27 @@ function runIsolated(scriptName)
 %   Prevents clear/clear all inside the script from wiping out
 %   the caller's variables (oldDir, t0, etc.).
     run(scriptName);
+end
+
+
+function runPythonStep(pyScript, stepId, description)
+%RUNPYTHONSTEP  Invoke one of the spoke's Python pipeline scripts.
+%   stepId may include CLI args after a space, e.g. '1j --all'.
+    parts = strsplit(stepId, ' ');
+    label = parts{1};
+    if numel(parts) > 1
+        cliArgs = strjoin(parts(2:end), ' ');
+    else
+        cliArgs = '';
+    end
+
+    fprintf('  [%s] %s (Python)...\n', label, description);
+    t0 = tic;
+    cmd = sprintf('python3 "%s" %s', pyScript, cliArgs);
+    [status, cmdout] = system(cmd);
+    if status ~= 0
+        error('Python step %s failed:\n%s', label, cmdout);
+    end
+    fprintf('%s', cmdout);
+    fprintf('  [%s] Done (%.1f s)\n\n', label, toc(t0));
 end

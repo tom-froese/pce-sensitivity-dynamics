@@ -67,6 +67,9 @@ if $FROM_RAW; then
     echo "  [1i] Computing PAS proportions (unsmoothed)..."
     matlab -batch "cd('code/preprocessing'); computePASProportions"
 
+    echo "  [1j] Preprocessing 250 Hz cleaned EEG for the aperiodic-exponent analysis..."
+    python3 code/preprocessing/preprocessEEGForExponent.py --all
+
     echo "  Step 1 complete."
     echo ""
 else
@@ -82,6 +85,7 @@ else
         data/preprocessed/EEG/globalScalpPotential_stats.mat \
         data/preprocessed/EEG/allchannel_data.mat \
         data/preprocessed/EEG/parietal_hemisphere_data.mat \
+        data/preprocessed/EEG/pce01/pce01_P1_task-raw.fif \
         results/Figure2_perchannel_fits.csv \
         results/Figure3_pas_proportions.csv; do
         if [ ! -f "$f" ]; then
@@ -109,13 +113,19 @@ echo "--- Step 2: Generating manuscript figures ---"
 echo "  [2a] Figure 1: Behavioral and bodily evidence..."
 matlab -batch "cd('code/analysis'); plotFigure1_Behavioral"
 
-echo "  [2b] Figure 2: Neural evidence (Python/MNE)..."
+echo "  [2b] Aperiodic exponent per (participant x within-trial bin) -- FOOOF..."
+python3 code/analysis/computeAperiodicExponent.py
+
+echo "  [2c] Aperiodic exponent S(x) fit + bootstrap peak CI..."
+python3 code/analysis/fitExponentSensitivity.py
+
+echo "  [2d] Figure 2: Neural evidence (Python/MNE)..."
 python3 code/analysis/plotFigure2_Neural.py
 
-echo "  [2c] PAS crossover statistics..."
+echo "  [2e] PAS crossover statistics..."
 matlab -batch "cd('code/analysis'); computePASCrossover"
 
-echo "  [2d] Figure 3: Perceptual evidence..."
+echo "  [2f] Figure 3: Perceptual evidence..."
 matlab -batch "cd('code/analysis'); plotFigure3_Perceptual"
 
 echo ""
