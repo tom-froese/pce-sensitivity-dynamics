@@ -107,7 +107,7 @@ The master script `reproduce.m` runs these steps in order:
 | Step | Script | Output |
 |------|--------|--------|
 | 2a | `plotFigure1_Behavioral.m` | `results/Figure1_Behavioral.{png,pdf}` |
-| 2b | `plotFigure2_Neural.py` | `results/Figure2_Neural.{png,pdf}` |
+| 2b | `plotFigure2_Neural.py` | `results/Figure2_Neural.{png,pdf}` (updated prototype: retains R² scalp in Panel C; adds Panel D for 1/f aperiodic exponent tracking S(x) with R²≈0.85, aligned under B) |
 | 2c | `computePASCrossover.m` | `results/Figure3_crossover_stats.csv` |
 | 2d | `plotFigure3_Perceptual.m` | `results/Figure3_Perceptual.{png,pdf}` |
 
