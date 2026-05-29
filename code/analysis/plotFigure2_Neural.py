@@ -11,6 +11,15 @@ Two-row layout:
   TOP RIGHT (B) — Global scalp potential (64-channel mean) grand median,
              overlaid with free-tau S(x) = A*x*exp(-e*x) + B fit.
 
+  BOTTOM RIGHT (D) — Cohort 1/f aperiodic exponent (FOOOF) per within-trial
+             bin, overlaid with the FIXED-parameter S(x) fit (λ = e,
+             τ = TAU_LOCKED = 3.9 s; only A and B estimated). The
+             fixed-form lead reads as a parameter-free prediction test
+             that matches the framework's idiom on Panels B/C. The
+             free-parameter results (λ free, τ₀ free, nested F-test,
+             per-participant t-test) live in the console output of
+             fitExponentSensitivity.py and in the JSON sidecar.
+
   BOTTOM LEFT (C) — Scalp-map triptych (all 64 channels, uncorrected):
              (i)   R^2_free — where does the sensitivity model fit?
              (ii)  tau* — best-fit boot-up lag per channel
@@ -177,15 +186,20 @@ exp_sem = exp_df['exponent_sem'].to_numpy()
 
 with open(EXP_JSON) as fh:
     exp_meta = json.load(fh)
-exp_boot = exp_meta['boot_up_free_lambda']        # {lambda, tau0_s, R2, peak_s}
+# Panel D leads with the FIXED-parameter form (λ = e, τ = TAU_LOCKED = 3.9 s) —
+# the headline reads as a parameter-free prediction test that matches the
+# framework's idiom on Panels B/C. The free-parameter results stay in the
+# console (fitExponentSensitivity.py prints them).
+exp_R2_fixed = exp_meta['head_to_head_R2']['sensitivity_peak_lambda_e']
 exp_ci   = exp_meta['bootstrap_peak_ci']          # {n_resamples, median_s, ci95_s}
 pas_s    = exp_meta['framework']['pas_crossover_s']
 t_oe_exp = TAU_LOCKED + (T_TRIAL - TAU_LOCKED) / E  # 1/e marker @ population τ
 
 print(f'\nAperiodic exponent (Panel D): n={exp_meta["n_participants"]}, '
-      f'free-λ boot-up fit: λ={exp_boot["lambda"]:.2f}, τ0={exp_boot["tau0_s"]:.1f} s, '
-      f'R²={exp_boot["R2"]:.2f}, peak={exp_boot["peak_s"]:.1f} s, '
-      f'95% CI=[{exp_ci["ci95_s"][0]:.0f}, {exp_ci["ci95_s"][1]:.0f}] s')
+      f'FIXED-form S(x) [λ = e, τ = {TAU_LOCKED:.1f} s]: R²={exp_R2_fixed:.3f}, '
+      f'peak at t = {t_oe_exp:.1f} s = 1/e (by construction); '
+      f'bootstrap 95 % CI on peak = [{exp_ci["ci95_s"][0]:.0f}, '
+      f'{exp_ci["ci95_s"][1]:.0f}] s')
 
 # -----------------------------------------------------------------------
 # 4. Figure  — 2 × 2 layout:  A | B   /   C(triptych) | D
@@ -336,22 +350,20 @@ ax_d.errorbar(exp_t, exp_mu, yerr=exp_sem, color=col_exp,
               lw=1.4, marker='o', ms=4, capsize=2, elinewidth=0.8,
               label='1/f exponent (mean ± SEM)', zorder=2)
 
-# S(x) fit overlay: A·x·exp(-λx) + B with free λ + free τ₀.
-# Coefficients A, B aren't in the sidecar — re-derive via 1-D least squares,
-# treating λ and τ₀ as fixed at the values from the fit.
-lam_b, tau0_b = exp_boot['lambda'], exp_boot['tau0_s']
-Teff_b = T_TRIAL - tau0_b
-mask_b = exp_t >= tau0_b
-xb = (exp_t[mask_b] - tau0_b) / Teff_b
-sb = xb * np.exp(-lam_b * xb)
-Xb = np.column_stack([sb, np.ones_like(sb)])
-A_b, B_b = np.linalg.lstsq(Xb, exp_mu[mask_b], rcond=None)[0]
-t_fit_d = np.linspace(tau0_b, T_TRIAL, 300)
-x_fit_d = (t_fit_d - tau0_b) / Teff_b
-y_fit_d = A_b * x_fit_d * np.exp(-lam_b * x_fit_d) + B_b
+# S(x) fit overlay — FIXED-parameter form (λ = e, τ = TAU_LOCKED = 3.9 s).
+# Only A and B are estimated, by 1-D least squares; the shape is parameter-free.
+Teff_d = T_TRIAL - TAU_LOCKED
+mask_d = exp_t >= TAU_LOCKED
+xd = (exp_t[mask_d] - TAU_LOCKED) / Teff_d
+sd = np.where(xd > 0, xd * np.exp(-E * xd), 0.0)
+Xd_mat = np.column_stack([sd, np.ones_like(sd)])
+A_d, B_d = np.linalg.lstsq(Xd_mat, exp_mu[mask_d], rcond=None)[0]
+t_fit_d = np.linspace(TAU_LOCKED, T_TRIAL, 300)
+x_fit_d = (t_fit_d - TAU_LOCKED) / Teff_d
+y_fit_d = A_d * x_fit_d * np.exp(-E * x_fit_d) + B_d
 ax_d.plot(t_fit_d, y_fit_d, color=col_fit, lw=2.2, zorder=3,
-          label=(rf'$S(x)$ fit: $\tau_0$={tau0_b:.1f} s, '
-                 rf'$\lambda$={lam_b:.2f}, $R^2$={exp_boot["R2"]:.2f}'))
+          label=(rf'$S(x)$ fit: $\lambda = e$, $\tau = {TAU_LOCKED:.1f}$ s (fixed), '
+                 rf'$R^2 = {exp_R2_fixed:.2f}$'))
 
 # Verticals: 1/e (locked-τ convention) and PAS 4→3.
 ax_d.axvline(t_oe_exp, color=col_oe, ls=':', lw=1.5, zorder=1,
@@ -363,7 +375,7 @@ ax_d.set_xlim(0, 60)
 ax_d.set_xlabel('Time (s)')
 ax_d.set_ylabel('Aperiodic exponent')
 ax_d.set_title(r'1/f aperiodic exponent tracks $S(x)$' '\n'
-               rf'(peak {exp_boot["peak_s"]:.0f} s brackets 1/e and PAS 4→3)',
+               rf'(bootstrap peak CI brackets 1/e and PAS 4→3)',
                pad=6, fontsize=10)
 ax_d.legend(loc='lower center', fontsize=7.5, frameon=False)
 
