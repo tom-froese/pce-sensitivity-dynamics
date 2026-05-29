@@ -1,6 +1,6 @@
 {
   "producer": "code/analysis/fitExponentSensitivity.py",
-  "produced_utc": "2026-05-28T23:33:31Z",
+  "produced_utc": "2026-05-29T01:14:41Z",
   "pipeline": "noICA (task-raw)",
   "n_participants": 62,
   "framework": {
@@ -14,40 +14,40 @@
   },
   "input_per_participant_csv": "aperiodic_exponent_per_participant.csv",
   "head_to_head_R2": {
-    "sensitivity_peak_lambda_e": 0.8448826275507805,
-    "inverted_U_quad": 0.7940886274727363,
-    "R_x_decay": 0.3383525954035206,
-    "trough": 0.8448826275507805,
-    "line": 0.10612717162476826
+    "sensitivity_peak_lambda_e": 0.8448826140561285,
+    "inverted_U_quad": 0.7940886194967597,
+    "R_x_decay": 0.3383525858593195,
+    "trough": 0.8448826140561285,
+    "line": 0.10612716683078982
   },
   "free_lambda_fit": {
-    "lambda": 2.4601578579297754,
-    "R2": 0.8759708474739294,
-    "peak_s": 26.70341475616048
+    "lambda": 2.4601578702429934,
+    "R2": 0.8759708329072741,
+    "peak_s": 26.703414642028203
   },
   "boot_up_lambda_e": {
-    "tau0_s": 4.339411376088273,
-    "R2": 0.8488650726308384,
-    "peak_s": 24.81579761432646
+    "tau0_s": 4.3394112768895585,
+    "R2": 0.8488650591778699,
+    "peak_s": 24.81579755162091
   },
   "boot_up_free_lambda": {
-    "lambda": 2.3386923770871277,
-    "tau0_s": 2.4618614660038265,
-    "R2": 0.8764092605838578,
-    "peak_s": 27.064557869222398
+    "lambda": 2.3386921647776715,
+    "tau0_s": 2.4618591654847486,
+    "R2": 0.8764092466031921,
+    "peak_s": 27.064558785845062
   },
   "bootstrap_peak_ci": {
     "n_resamples": 2000,
-    "median_s": 26.637973560230463,
+    "median_s": 26.637973520031846,
     "ci95_s": [
-      18.98741560692491,
-      37.30540853528854
+      18.987415657665718,
+      37.305406548795055
     ]
   },
   "emg_reduced_2_20Hz": {
-    "R2_sensitivity_peak": 0.48085556807314656,
+    "R2_sensitivity_peak": 0.48085559259401534,
     "argmax_s": 30.0,
-    "lambda_free": 1.911069118113525
+    "lambda_free": 1.911068997758027
   },
   "per_participant": {
     "frac_negative_curvature": 0.6612903225806451,

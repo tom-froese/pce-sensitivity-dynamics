@@ -50,7 +50,7 @@ assert len(CH_NAMES) == N_CHAN
 MONTAGE = "standard_1005"
 EEG_UNIT_SCALE = 1e-6        # raw .mat values are microvolts -> Volts
 LINE_FREQ = 60.0             # Okinawa 60 Hz grid
-BANDPASS = (1.0, 40.0)       # FIR via hypyp.prep.filt
+BANDPASS = (1.0, 40.0)       # FIR via MNE Raw.filter (Nyquist alias safety + drift)
 SFREQ_TARGET = 250.0
 REREF = "average"
 

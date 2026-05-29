@@ -10,7 +10,5 @@ scipy>=1.10
 matplotlib>=3.7
 
 # EEG preprocessing + analysis
-mne>=1.6                # Raw I/O, filtering, montages, topomap
-hypyp>=0.5              # prep.filt + prep.AR_local (used by hypyp_ext.preprocess_dyad)
-autoreject>=0.4         # dependency of hypyp.prep.AR_local
+mne>=1.6                # Raw I/O, filtering, montages, topomap, LOF bad-channel detection
 fooof>=1.1              # 1/f aperiodic-exponent fits (FOOOF "specparam" toolbox)

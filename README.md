@@ -30,7 +30,7 @@ reproduce('raw')     % from raw data (requires data/raw/)
 - [EEGLAB](https://sccn.ucsd.edu/eeglab/) (for topographic scalp maps)
 - Python 3.9+ for Figure 2 (panels B–D) and the aperiodic-exponent pipeline.
   Install the Python dependencies with `pip install -r requirements.txt`
-  (key packages: `mne`, `hypyp`, `autoreject`, `fooof`, plus the usual
+  (key packages: `mne` + `fooof`, plus the usual
   `numpy`/`pandas`/`scipy`/`matplotlib`).
 
 ## Data
@@ -82,8 +82,7 @@ pce-sensitivity-dynamics/
 │       ├── extractParietalHemispheres.m  # L/R parietal cluster extraction
 │       ├── computePerChannelFits.m     # Per-channel free-tau + locked-tau fits
 │       ├── computePASProportions.m     # Unsmoothed disjoint-bin PAS proportions
-│       ├── preprocessEEGForExponent.py # Raw .mat → 250 Hz cleaned .fif (Python)
-│       └── hypyp_ext/                  # Continuous-Raw preprocessing helpers
+│       └── preprocessEEGForExponent.py # Raw .mat → 250 Hz cleaned .fif (Python)
 ├── data/
 │   ├── preprocessed/                   # Tracked in git (included in repo)
 │   │   ├── ClickTimes/                 # Behavioral responses
@@ -112,7 +111,7 @@ The master script `reproduce.m` runs these steps in order:
 | 1g | `extractParietalHemispheres.m` | `data/preprocessed/EEG/parietal_hemisphere_data.mat` |
 | 1h | `computePerChannelFits.m` | `results/Figure2_perchannel_fits.csv` |
 | 1i | `computePASProportions.m` | `results/Figure3_pas_proportions.csv` |
-| 1j | `preprocessEEGForExponent.py` | `data/preprocessed/EEG/pceXX/pceXX_PY_task-raw.fif` (per dyad/participant; Python via MNE + HyPyP-extension preprocessing — notch → bandpass → bad-channel interpolation → average reference → 250 Hz resample → epochs → autoreject) |
+| 1j | `preprocessEEGForExponent.py` | `data/preprocessed/EEG/pceXX/pceXX_PY_task-raw.fif` (per dyad/participant; Python via MNE — minimal chain: bandpass 1–40 Hz [Nyquist alias safety + drift control] → resample 250 Hz → bad-channel LOF interp → average reference. The recording-level chain — 60 Hz notch, FCz common reference, 1000 Hz sample, 0.016–1000 Hz analog cutoff — is documented in Lerique et al. 2024.) |
 
 ### Derived statistics
 
