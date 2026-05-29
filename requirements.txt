@@ -1,0 +1,14 @@
+# Python dependencies for the Figure 2 (panels B-D) + aperiodic-exponent pipeline.
+# Tested with the listed minimum versions; newer should also work.
+#
+# Install:    pip install -r requirements.txt
+
+# Core scientific stack
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+matplotlib>=3.7
+
+# EEG preprocessing + analysis
+mne>=1.6                # Raw I/O, filtering, montages, topomap, LOF bad-channel detection
+fooof>=1.1              # 1/f aperiodic-exponent fits (FOOOF "specparam" toolbox)

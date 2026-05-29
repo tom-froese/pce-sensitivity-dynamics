@@ -1,0 +1,90 @@
+{
+  "producer": "code/analysis/fitExponentSensitivity.py",
+  "produced_utc": "2026-05-29T01:57:50Z",
+  "pipeline": "noICA (task-raw)",
+  "n_participants": 62,
+  "framework": {
+    "tau_s": 3.9,
+    "T_trial_s": 60.0,
+    "pas_crossover_s": 29.0,
+    "pas_crossover_ci_s": [
+      23.5,
+      35.7
+    ]
+  },
+  "input_per_participant_csv": "aperiodic_exponent_per_participant.csv",
+  "head_to_head_R2": {
+    "sensitivity_peak_lambda_e": 0.8448826140561281,
+    "inverted_U_quad": 0.7940886194967586,
+    "R_x_decay": 0.3383525858593184,
+    "trough": 0.8448826140561281,
+    "line": 0.10612716683079215
+  },
+  "free_lambda_fit": {
+    "lambda": 2.4601578571594938,
+    "R2": 0.8759708329072733,
+    "peak_s": 26.703414763300287
+  },
+  "boot_up_lambda_e": {
+    "tau0_s": 4.339410875120312,
+    "R2": 0.8488650591778645,
+    "peak_s": 24.81579729765431
+  },
+  "boot_up_free_lambda": {
+    "lambda": 2.3386953171817337,
+    "tau0_s": 2.461899759048196,
+    "R2": 0.8764092466018661,
+    "peak_s": 27.06454885926901
+  },
+  "bootstrap_peak_ci": {
+    "n_resamples": 2000,
+    "median_s": 26.637973540575445,
+    "ci95_s": [
+      18.987415661293007,
+      37.30540738644618
+    ]
+  },
+  "bootstrap_lambda_ci": {
+    "n_resamples": 2000,
+    "median": 2.46723834479344,
+    "ci95": [
+      1.6793689153522893,
+      3.718331007278686
+    ],
+    "brackets_e": true
+  },
+  "model_comparison_F_test": {
+    "description": "Nested F-test: reduced model = A\u00b7s+B with s = x\u00b7exp(-e\u00b7x) and x = (t-\u03c4)/(T-\u03c4), \u03c4=3.9 (2 free); full model = A\u00b7xb\u00b7exp(-\u03bb\u00b7xb)+B with xb=(t-\u03c4\u2080)/(T-\u03c4\u2080) (4 free).",
+    "delta_R2": 0.031526632545738065,
+    "df_num": 2,
+    "df_denom": 23,
+    "F_statistic": 2.93352264880248,
+    "F_critical_0_05": 3.422132207861177,
+    "p_value": 0.07332351508626311,
+    "verdict": "free fit does NOT statistically improve on fixed form"
+  },
+  "emg_reduced_2_20Hz": {
+    "R2_sensitivity_peak": 0.480855592594013,
+    "argmax_s": 30.0,
+    "lambda_free": 1.911069021792416
+  },
+  "per_participant": {
+    "frac_negative_curvature": 0.6612903225806451,
+    "n_with_fit": 62,
+    "median_peak_s": 37.00483792312774,
+    "curvature_t_test": {
+      "description": "One-sample t-test of per-participant quadratic curvature coefficient against 0; negative t and small p => population-level inverted-U.",
+      "t": -3.791870391700634,
+      "p": 0.0003453536226598501,
+      "n": 62
+    },
+    "click_link_spearman": null,
+    "click_link_pvalue": null,
+    "click_link_n_pairs": 0
+  },
+  "click_median_s": 29.856397,
+  "outputs": {
+    "csv": "aperiodic_exponent_within_trial.csv",
+    "png": "aperiodic_exponent_within_trial.png"
+  }
+}

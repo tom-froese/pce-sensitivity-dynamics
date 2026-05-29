@@ -3,7 +3,7 @@ plotFigure2_Neural.py
 =========================================================================
 PNAS Figure 2 — Neural Evidence
 
-Two-row, three-column figure:
+Two-row layout:
 
   TOP LEFT (A) — Sensitivity schematic: R(x) and dR/dlambda ∝ S(x),
              with rejection/selection phases and trough at x = 1/e.
@@ -11,14 +11,32 @@ Two-row, three-column figure:
   TOP RIGHT (B) — Global scalp potential (64-channel mean) grand median,
              overlaid with free-tau S(x) = A*x*exp(-e*x) + B fit.
 
-  BOTTOM ROW (C) — Scalp-map triptych (all 64 channels, uncorrected):
+  BOTTOM RIGHT (D) — Cohort 1/f aperiodic exponent (FOOOF) per within-trial
+             bin, overlaid with the FIXED-parameter S(x) fit (λ = e,
+             τ = TAU_LOCKED = 3.9 s; only A and B estimated). The
+             fixed-form lead reads as a parameter-free prediction test
+             that matches the framework's idiom on Panels B/C. The
+             free-parameter results (λ free, τ₀ free, nested F-test,
+             per-participant t-test) live in the console output of
+             fitExponentSensitivity.py and in the JSON sidecar.
+
+  BOTTOM LEFT (C) — Scalp-map triptych (all 64 channels, uncorrected):
              (i)   R^2_free — where does the sensitivity model fit?
              (ii)  tau* — best-fit boot-up lag per channel
              (iii) Signed trough value — effect size and polarity
 
+  BOTTOM RIGHT (D) — 1/f aperiodic exponent vs within-trial time, with
+             the free boot-up S(x) fit, bootstrap 95 % CI on the peak,
+             and the 1/e + PAS 4→3 reference verticals. The peaked
+             (inverted-U) shape, λ ≈ e, and peak co-located with 1/e
+             and the PAS crossover are the candidate neural
+             sensitivity-dynamics signature.
+
 INPUTS:
-  data/preprocessed/EEG/allchannel_data.mat  (scipy format)
+  data/preprocessed/EEG/allchannel_data.mat       (scipy format)
   results/Figure2_perchannel_fits.csv
+  results/aperiodic_exponent_within_trial.csv     (Panel D data)
+  results/aperiodic_exponent_within_trial.json    (Panel D fit + CI)
 
 OUTPUTS:
   results/Figure2_Neural.pdf  (vector)
@@ -28,6 +46,7 @@ AUTHOR: Embodied Cognitive Science Unit, OIST
 DATE:   May 2026
 =========================================================================
 """
+import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -43,6 +62,8 @@ import scipy.io as sio
 HERE    = Path(__file__).resolve().parent
 ROOT    = HERE.parent.parent
 CSV     = ROOT / 'results' / 'Figure2_perchannel_fits.csv'
+EXP_CSV = ROOT / 'results' / 'aperiodic_exponent_within_trial.csv'
+EXP_JSON = ROOT / 'results' / 'aperiodic_exponent_within_trial.json'
 OUT_PNG = ROOT / 'results' / 'Figure2_Neural.png'
 OUT_PDF = ROOT / 'results' / 'Figure2_Neural.pdf'
 
@@ -156,7 +177,32 @@ print(f'  R2_lock range: [{R2_lock_all.min():.3f}, {R2_lock_all.max():.3f}]')
 print(f'  trough range:  [{trough_raw.min():.3f}, {trough_raw.max():.3f}] µV')
 
 # -----------------------------------------------------------------------
-# 3. Figure
+# 3. Aperiodic-exponent data + fit (Panel D)
+# -----------------------------------------------------------------------
+exp_df = pd.read_csv(str(EXP_CSV))
+exp_t   = exp_df['trial_time'].to_numpy()
+exp_mu  = exp_df['exponent_mean'].to_numpy()
+exp_sem = exp_df['exponent_sem'].to_numpy()
+
+with open(EXP_JSON) as fh:
+    exp_meta = json.load(fh)
+# Panel D leads with the FIXED-parameter form (λ = e, τ = TAU_LOCKED = 3.9 s) —
+# the headline reads as a parameter-free prediction test that matches the
+# framework's idiom on Panels B/C. The free-parameter results stay in the
+# console (fitExponentSensitivity.py prints them).
+exp_R2_fixed = exp_meta['head_to_head_R2']['sensitivity_peak_lambda_e']
+exp_ci   = exp_meta['bootstrap_peak_ci']          # {n_resamples, median_s, ci95_s}
+pas_s    = exp_meta['framework']['pas_crossover_s']
+t_oe_exp = TAU_LOCKED + (T_TRIAL - TAU_LOCKED) / E  # 1/e marker @ population τ
+
+print(f'\nAperiodic exponent (Panel D): n={exp_meta["n_participants"]}, '
+      f'FIXED-form S(x) [λ = e, τ = {TAU_LOCKED:.1f} s]: R²={exp_R2_fixed:.3f}, '
+      f'peak at t = {t_oe_exp:.1f} s = 1/e (by construction); '
+      f'bootstrap 95 % CI on peak = [{exp_ci["ci95_s"][0]:.0f}, '
+      f'{exp_ci["ci95_s"][1]:.0f}] s')
+
+# -----------------------------------------------------------------------
+# 4. Figure  — 2 × 2 layout:  A | B   /   C(triptych) | D
 # -----------------------------------------------------------------------
 plt.rcParams.update({
     'font.size': 10,
@@ -166,22 +212,20 @@ plt.rcParams.update({
 
 fig = plt.figure(figsize=(13.0, 12.0))
 gs_outer = GridSpec(
-    2, 1,
-    height_ratios=[1.0, 1.3],
-    hspace=0.175,
-    left=0.06, right=0.96, top=0.90, bottom=0.05,
+    2, 2,
+    height_ratios=[1.0, 1.1],
+    width_ratios=[1.3, 1.0],
+    hspace=0.30, wspace=0.30,
+    left=0.06, right=0.96, top=0.93, bottom=0.05,
 )
-gs_top = GridSpecFromSubplotSpec(
-    1, 2, subplot_spec=gs_outer[0], wspace=0.45,
-    width_ratios=[1, 1],
-)
-gs_bot = GridSpecFromSubplotSpec(
-    1, 3, subplot_spec=gs_outer[1], wspace=0.35,
-)
+gs_top_left  = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_outer[0, 0])
+gs_top_right = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_outer[0, 1])
+# Bottom-left holds the 3 scalp maps (sub-gridspec 1×3).
+gs_bot_left  = GridSpecFromSubplotSpec(1, 3, subplot_spec=gs_outer[1, 0], wspace=0.35)
+gs_bot_right = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_outer[1, 1])
 
 # ---- TOP LEFT (A): Sensitivity schematic ----
-
-ax_a = fig.add_subplot(gs_top[0, 0])
+ax_a = fig.add_subplot(gs_top_left[0, 0])
 col_decay = '#808080'
 col_sens  = '#d93320'
 col_early = '#2673bf'
@@ -193,10 +237,8 @@ dRdlam = -x_dim * np.exp(-E * x_dim)
 x_trough = 1.0 / E
 y_trough_schematic = dRdlam[np.searchsorted(x_dim, x_trough)]
 
-ax_a.fill_betweenx([-1, 0], 0, x_trough,
-                    color=col_early, alpha=0.06)
-ax_a.fill_betweenx([-1, 0], x_trough, 1.0,
-                    color=col_late, alpha=0.06)
+ax_a.fill_betweenx([-1, 0], 0, x_trough, color=col_early, alpha=0.06)
+ax_a.fill_betweenx([-1, 0], x_trough, 1.0, color=col_late, alpha=0.06)
 
 ax_a.plot(x_dim, Rx, '-', color=col_decay, lw=2.5, label=r'$R(x)$: reliability')
 ax_a_r = ax_a.twinx()
@@ -204,23 +246,17 @@ ax_a_r.plot(x_dim, dRdlam, '-', color=col_sens, lw=2.5,
             label=r'$\partial R/\partial\lambda \propto S(x)$: rate sensitivity')
 ax_a_r.plot(x_trough, y_trough_schematic, '^', ms=9,
             mfc=col_sens, mec='k', mew=0.5, zorder=5)
-ax_a_r.annotate(
-    rf'$x = 1/e$',
-    xy=(x_trough, y_trough_schematic),
-    xytext=(12, -8), textcoords='offset points',
-    fontsize=8, fontweight='bold', color=col_sens,
-)
+ax_a_r.annotate(rf'$x = 1/e$', xy=(x_trough, y_trough_schematic),
+                xytext=(12, -8), textcoords='offset points',
+                fontsize=8, fontweight='bold', color=col_sens)
 
-ax_a.set_xlim(0, 1.0)
-ax_a.set_ylim(-0.05, 1.05)
-ax_a_r.set_ylim(-1, 0)
+ax_a.set_xlim(0, 1.0); ax_a.set_ylim(-0.05, 1.05); ax_a_r.set_ylim(-1, 0)
 ax_a.set_xlabel(r'Dimensionless time  $x = k\,t\,/\,\lambda$', fontsize=9)
 ax_a.set_ylabel(r'$R(x) = e^{-\lambda x}$', fontsize=9, color=col_decay)
 ax_a_r.set_ylabel(r'$\partial R / \partial\lambda$', fontsize=9, color=col_sens)
 ax_a.tick_params(axis='y', colors=col_decay)
 ax_a_r.tick_params(axis='y', colors=col_sens)
-ax_a_r.spines['right'].set_visible(True)
-ax_a_r.spines['right'].set_color(col_sens)
+ax_a_r.spines['right'].set_visible(True); ax_a_r.spines['right'].set_color(col_sens)
 ax_a.spines['left'].set_color(col_decay)
 
 ax_a.text(0.08, 0.08, 'Rejection\nphase', transform=ax_a.transAxes,
@@ -233,13 +269,11 @@ lines_a = [l for l in ax_a.get_lines() + ax_a_r.get_lines()
 labels_a = [l.get_label() for l in lines_a]
 ax_a.legend(lines_a, labels_a, loc='center right', frameon=True,
             fontsize=7.5, fancybox=False, edgecolor='0.7')
-
 ax_a.set_title('Sensitivity of reliability to rate perturbations',
                pad=6, fontsize=10)
 
 # ---- TOP RIGHT (B): Global scalp potential + S(x) fit ----
-
-ax_b = fig.add_subplot(gs_top[0, 1])
+ax_b = fig.add_subplot(gs_top_right[0, 0])
 col_gsp = '#c44e52'
 
 ax_b.plot(t_sm, sm_gsp, color=col_gsp, lw=1.0, alpha=0.35,
@@ -252,13 +286,11 @@ ax_b.plot(fit_gsp['t_fit'], fit_gsp['yhat'], color=col_gsp, lw=2.5,
 y_trough_raw = fit_gsp['A'] * (1.0 / E) * np.exp(-1.0) + fit_gsp['B']
 ax_b.plot(fit_gsp['t_trough'], y_trough_raw, 'o',
           mfc=col_gsp, mec='white', mew=1.2, ms=8, zorder=5)
-ax_b.annotate(
-    rf't = {fit_gsp["t_trough"]:.1f} s',
-    xy=(fit_gsp['t_trough'], y_trough_raw),
-    xytext=(0, 10), textcoords='offset points',
-    ha='center', va='bottom', fontsize=9, fontweight='bold',
-    color=col_gsp,
-)
+ax_b.annotate(rf't = {fit_gsp["t_trough"]:.1f} s',
+              xy=(fit_gsp['t_trough'], y_trough_raw),
+              xytext=(0, 10), textcoords='offset points',
+              ha='center', va='bottom', fontsize=9, fontweight='bold',
+              color=col_gsp)
 
 ax_b.axvline(TAU_GSP, color='0.5', ls=':', lw=1.0)
 ax_b.axhline(0, color='k', lw=0.4, alpha=0.3)
@@ -266,18 +298,15 @@ ax_b.axhline(0, color='k', lw=0.4, alpha=0.3)
 ax_b.set_xlim(t_sm.min(), t_sm.max())
 ax_b.set_xlabel('Time (s)')
 ax_b.set_ylabel(r'Scalp potential ($\mu$V)')
-ax_b.set_title(
-    rf'Global scalp potential — $S(x)$ fit  '
-    rf'(free $\tau^*$ = {TAU_GSP:.1f} s)',
-    pad=6, fontsize=10,
-)
+ax_b.set_title(rf'Global scalp potential — $S(x)$ fit  '
+               rf'(free $\tau^*$ = {TAU_GSP:.1f} s)',
+               pad=6, fontsize=10)
 ax_b.legend(loc='upper right', frameon=False, fontsize=7.5)
 
-# ---- BOTTOM ROW (C): three scalp maps ----
-
-ax_topo1 = fig.add_subplot(gs_bot[0, 0])
-ax_topo2 = fig.add_subplot(gs_bot[0, 1])
-ax_topo3 = fig.add_subplot(gs_bot[0, 2])
+# ---- BOTTOM LEFT (C): three scalp maps ----
+ax_topo1 = fig.add_subplot(gs_bot_left[0, 0])
+ax_topo2 = fig.add_subplot(gs_bot_left[0, 1])
+ax_topo3 = fig.add_subplot(gs_bot_left[0, 2])
 
 im1, _ = mne.viz.plot_topomap(
     R2_free_all, info_all, axes=ax_topo1, show=False, cmap='viridis',
@@ -285,8 +314,7 @@ im1, _ = mne.viz.plot_topomap(
 )
 ax_topo1.set_title(r'$R^2_{\mathrm{free}}$  (best-fit quality)',
                    pad=6, fontsize=9)
-cb1 = fig.colorbar(im1, ax=ax_topo1, shrink=0.75, pad=0.05)
-cb1.set_label(r'$R^2$')
+cb1 = fig.colorbar(im1, ax=ax_topo1, shrink=0.75, pad=0.05); cb1.set_label(r'$R^2$')
 
 im2, _ = mne.viz.plot_topomap(
     tau_all, info_all, axes=ax_topo2, show=False, cmap='coolwarm',
@@ -294,8 +322,7 @@ im2, _ = mne.viz.plot_topomap(
 )
 ax_topo2.set_title(r'$\tau^{*}$  (best-fit boot-up lag)',
                    pad=6, fontsize=9)
-cb2 = fig.colorbar(im2, ax=ax_topo2, shrink=0.75, pad=0.05)
-cb2.set_label(r'$\tau^{*}$ (s)')
+cb2 = fig.colorbar(im2, ax=ax_topo2, shrink=0.75, pad=0.05); cb2.set_label(r'$\tau^{*}$ (s)')
 
 tm_max = float(np.nanmax(np.abs(trough_raw)))
 im3, _ = mne.viz.plot_topomap(
@@ -304,17 +331,59 @@ im3, _ = mne.viz.plot_topomap(
 )
 ax_topo3.set_title(r'Signed trough value  $A \cdot s(1/e) + B$',
                    pad=6, fontsize=9)
-cb3 = fig.colorbar(im3, ax=ax_topo3, shrink=0.75, pad=0.05)
-cb3.set_label(r'$\mu$V')
+cb3 = fig.colorbar(im3, ax=ax_topo3, shrink=0.75, pad=0.05); cb3.set_label(r'$\mu$V')
+
+# ---- BOTTOM RIGHT (D): 1/f aperiodic exponent tracks S(x) ----
+ax_d = fig.add_subplot(gs_bot_right[0, 0])
+col_exp = '#1f4e79'
+col_fit = '#000000'
+col_oe  = '#d62728'
+col_pas = '#2ca02c'
+
+# Peak 95 % CI band (bootstrap result from fitExponentSensitivity.py).
+ci_lo, ci_hi = exp_ci['ci95_s']
+ax_d.axvspan(ci_lo, ci_hi, color='0.85', alpha=0.7, zorder=0,
+             label=f'Peak 95% CI [{ci_lo:.0f}, {ci_hi:.0f}] s')
+
+# Data: cohort mean ± SEM.
+ax_d.errorbar(exp_t, exp_mu, yerr=exp_sem, color=col_exp,
+              lw=1.4, marker='o', ms=4, capsize=2, elinewidth=0.8,
+              label='1/f exponent (mean ± SEM)', zorder=2)
+
+# S(x) fit overlay — FIXED-parameter form (λ = e, τ = TAU_LOCKED = 3.9 s).
+# Only A and B are estimated, by 1-D least squares; the shape is parameter-free.
+Teff_d = T_TRIAL - TAU_LOCKED
+mask_d = exp_t >= TAU_LOCKED
+xd = (exp_t[mask_d] - TAU_LOCKED) / Teff_d
+sd = np.where(xd > 0, xd * np.exp(-E * xd), 0.0)
+Xd_mat = np.column_stack([sd, np.ones_like(sd)])
+A_d, B_d = np.linalg.lstsq(Xd_mat, exp_mu[mask_d], rcond=None)[0]
+t_fit_d = np.linspace(TAU_LOCKED, T_TRIAL, 300)
+x_fit_d = (t_fit_d - TAU_LOCKED) / Teff_d
+y_fit_d = A_d * x_fit_d * np.exp(-E * x_fit_d) + B_d
+ax_d.plot(t_fit_d, y_fit_d, color=col_fit, lw=2.2, zorder=3,
+          label=(rf'$S(x)$ fit: $\lambda = e$, $\tau = {TAU_LOCKED:.1f}$ s (fixed), '
+                 rf'$R^2 = {exp_R2_fixed:.2f}$'))
+
+# Verticals: 1/e (locked-τ convention) and PAS 4→3.
+ax_d.axvline(t_oe_exp, color=col_oe, ls=':', lw=1.5, zorder=1,
+             label=f'1/e ({t_oe_exp:.0f} s)')
+ax_d.axvline(pas_s, color=col_pas, ls='-.', lw=1.5, zorder=1,
+             label=f'PAS 4→3 ({pas_s:.0f} s)')
+
+ax_d.set_xlim(0, 60)
+ax_d.set_xlabel('Time (s)')
+ax_d.set_ylabel('Aperiodic exponent')
+ax_d.set_title(r'1/f aperiodic exponent tracks $S(x)$' '\n'
+               rf'(bootstrap peak CI brackets 1/e and PAS 4→3)',
+               pad=6, fontsize=10)
+ax_d.legend(loc='lower center', fontsize=7.5, frameon=False)
 
 # ---- Panel letters and suptitle ----
+fig.suptitle(rf'Figure 2 — Neural evidence  (N = {n_part} participants)',
+             y=0.96, fontsize=12, fontweight='bold')
 
-fig.suptitle(
-    rf'Figure 2 — Neural evidence  (N = {n_part} participants)',
-    y=0.96, fontsize=12, fontweight='bold',
-)
-
-for ax, letter in [(ax_a, 'A'), (ax_b, 'B'), (ax_topo1, 'C')]:
+for ax, letter in [(ax_a, 'A'), (ax_b, 'B'), (ax_topo1, 'C'), (ax_d, 'D')]:
     ax.text(-0.08, 1.08, letter, transform=ax.transAxes,
             fontsize=16, fontweight='bold', va='bottom', ha='left')
 
