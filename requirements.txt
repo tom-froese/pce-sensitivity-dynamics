@@ -12,3 +12,6 @@ matplotlib>=3.7
 # EEG preprocessing + analysis
 mne>=1.6                # Raw I/O, filtering, montages, topomap, LOF bad-channel detection
 fooof>=1.1              # 1/f aperiodic-exponent fits (FOOOF "specparam" toolbox)
+
+# Validation
+h5py>=3.8               # read MATLAB v7.3 (HDF5) stats .mat in validate_reproduction.py
