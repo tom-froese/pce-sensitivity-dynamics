@@ -12,11 +12,11 @@ Two-row layout:
              overlaid with free-tau S(x) = A*x*exp(-e*x) + B fit.
 
   BOTTOM RIGHT (D) — Cohort 1/f aperiodic exponent (FOOOF) per within-trial
-             bin, overlaid with the FIXED-parameter S(x) fit (λ = e,
+             bin, overlaid with the FIXED-parameter S(x) fit (Λ = e,
              τ = TAU_LOCKED = 3.9 s; only A and B estimated). The
              fixed-form lead reads as a parameter-free prediction test
              that matches the framework's idiom on Panels B/C. The
-             free-parameter results (λ free, τ₀ free, nested F-test,
+             free-parameter results (Λ free, τ₀ free, nested F-test,
              per-participant t-test) live in the console output of
              fitExponentSensitivity.py and in the JSON sidecar.
 
@@ -28,7 +28,7 @@ Two-row layout:
   BOTTOM RIGHT (D) — 1/f aperiodic exponent vs within-trial time, with
              the free boot-up S(x) fit, bootstrap 95 % CI on the peak,
              and the 1/e + PAS 4→3 reference verticals. The peaked
-             (inverted-U) shape, λ ≈ e, and peak co-located with 1/e
+             (inverted-U) shape, Λ ≈ e, and peak co-located with 1/e
              and the PAS crossover are the candidate neural
              sensitivity-dynamics signature.
 
@@ -188,6 +188,10 @@ fit_gsp = fit_locked(t_sm, sm_gsp, tau=TAU_GSP)
 print(f'Global SP (free tau = {TAU_GSP:.2f} s):  '
       f'A = {fit_gsp["A"]:+.2f}, B = {fit_gsp["B"]:+.2f}, '
       f'R² = {fit_gsp["R2"]:.3f},  trough at t = {fit_gsp["t_trough"]:.2f} s')
+_fit_gsp_locked = fit_locked(t_sm, sm_gsp, tau=TAU_LOCKED)
+print(f'Global SP (LOCKED tau = {TAU_LOCKED:.2f} s): '
+      f'A = {_fit_gsp_locked["A"]:+.2f}, B = {_fit_gsp_locked["B"]:+.2f}, '
+      f'R² = {_fit_gsp_locked["R2"]:.3f},  trough at t = {_fit_gsp_locked["t_trough"]:.2f} s')
 
 # -----------------------------------------------------------------------
 # 2. Scalp-map data — all 64 channels, no filtering
@@ -221,7 +225,7 @@ exp_sem = exp_df['exponent_sem'].to_numpy()
 
 with open(EXP_JSON) as fh:
     exp_meta = json.load(fh)
-# Panel D leads with the FIXED-parameter form (λ = e, τ = TAU_LOCKED = 3.9 s) —
+# Panel D leads with the FIXED-parameter form (Λ = e, τ = TAU_LOCKED = 3.9 s) —
 # the headline reads as a parameter-free prediction test that matches the
 # framework's idiom on Panels B/C. The free-parameter results stay in the
 # console (fitExponentSensitivity.py prints them).
@@ -231,7 +235,7 @@ pas_s    = exp_meta['framework']['pas_crossover_s']
 t_oe_exp = TAU_LOCKED + (T_TRIAL - TAU_LOCKED) / E  # 1/e marker @ population τ
 
 print(f'\nAperiodic exponent (Panel D): n={exp_meta["n_participants"]}, '
-      f'FIXED-form S(x) [λ = e, τ = {TAU_LOCKED:.1f} s]: R²={exp_R2_fixed:.3f}, '
+      f'FIXED-form S(x) [Λ = e, τ = {TAU_LOCKED:.1f} s]: R²={exp_R2_fixed:.3f}, '
       f'peak at t = {t_oe_exp:.1f} s = 1/e (by construction); '
       f'bootstrap 95 % CI on peak = [{exp_ci["ci95_s"][0]:.0f}, '
       f'{exp_ci["ci95_s"][1]:.0f}] s')
@@ -338,7 +342,7 @@ ax_d.errorbar(exp_t, exp_mu, yerr=exp_sem, color=col_exp,
               lw=1.4, marker='o', ms=4, capsize=2, elinewidth=0.8,
               label='1/f exponent (mean ± SEM)', zorder=2)
 
-# S(x) fit overlay — FIXED-parameter form (λ = e, τ = TAU_LOCKED = 3.9 s).
+# S(x) fit overlay — FIXED-parameter form (Λ = e, τ = TAU_LOCKED = 3.9 s).
 # Only A and B are estimated, by 1-D least squares; the shape is parameter-free.
 Teff_d = T_TRIAL - TAU_LOCKED
 mask_d = exp_t >= TAU_LOCKED
@@ -350,7 +354,7 @@ t_fit_d = np.linspace(TAU_LOCKED, T_TRIAL, 300)
 x_fit_d = (t_fit_d - TAU_LOCKED) / Teff_d
 y_fit_d = A_d * x_fit_d * np.exp(-E * x_fit_d) + B_d
 ax_d.plot(t_fit_d, y_fit_d, color=col_fit, lw=2.2, zorder=3,
-          label=(rf'$S(x)$ fit: $\lambda = e$, $\tau = {TAU_LOCKED:.1f}$ s (fixed), '
+          label=(rf'$S(x)$ fit: $\Lambda = e$, $\tau = {TAU_LOCKED:.1f}$ s (fixed), '
                  rf'$R^2 = {exp_R2_fixed:.2f}$'))
 
 # Verticals: 1/e (locked-τ convention) and PAS 4→3.
