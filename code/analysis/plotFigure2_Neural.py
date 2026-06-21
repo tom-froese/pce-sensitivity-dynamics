@@ -245,70 +245,23 @@ plt.rcParams.update({
     'axes.spines.right': False,
 })
 
-fig = plt.figure(figsize=(13.0, 12.0))
+fig = plt.figure(figsize=(12.0, 8.5))
 gs_outer = GridSpec(
     2, 2,
-    height_ratios=[1.0, 1.1],
+    height_ratios=[0.85, 1.1],
     width_ratios=[1.3, 1.0],
-    hspace=0.30, wspace=0.30,
-    left=0.06, right=0.96, top=0.93, bottom=0.05,
+    hspace=0.34, wspace=0.30,
+    left=0.06, right=0.96, top=0.95, bottom=0.07,
 )
-gs_top_left  = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_outer[0, 0])
-gs_top_right = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_outer[0, 1])
-# Bottom-left holds the 3 scalp maps (sub-gridspec 1×3).
+# Top row (A): the global scalp potential, spanning the full width.
+# Bottom-left (B): the three scalp maps (sub-gridspec 1×3); bottom-right (C):
+# the aperiodic exponent. The conceptual sensitivity schematic that used to be
+# Panel A is now a standalone figure in the main text, not a panel here.
 gs_bot_left  = GridSpecFromSubplotSpec(1, 3, subplot_spec=gs_outer[1, 0], wspace=0.35)
 gs_bot_right = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_outer[1, 1])
 
-# ---- TOP LEFT (A): Sensitivity schematic ----
-ax_a = fig.add_subplot(gs_top_left[0, 0])
-col_decay = '#808080'
-col_sens  = '#d93320'
-col_early = '#2673bf'
-col_late  = '#d98c19'
-
-x_dim = np.linspace(0, 1.0, 300)
-Rx     = np.exp(-E * x_dim)
-dRdlam = -x_dim * np.exp(-E * x_dim)
-x_trough = 1.0 / E
-y_trough_schematic = dRdlam[np.searchsorted(x_dim, x_trough)]
-
-ax_a.fill_betweenx([-1, 0], 0, x_trough, color=col_early, alpha=0.06)
-ax_a.fill_betweenx([-1, 0], x_trough, 1.0, color=col_late, alpha=0.06)
-
-ax_a.plot(x_dim, Rx, '-', color=col_decay, lw=2.5, label=r'$R(x)$: reliability')
-ax_a_r = ax_a.twinx()
-ax_a_r.plot(x_dim, dRdlam, '-', color=col_sens, lw=2.5,
-            label=r'$\partial R/\partial\lambda \propto S(x)$: rate sensitivity')
-ax_a_r.plot(x_trough, y_trough_schematic, '^', ms=9,
-            mfc=col_sens, mec='k', mew=0.5, zorder=5)
-ax_a_r.annotate(rf'$x = 1/e$', xy=(x_trough, y_trough_schematic),
-                xytext=(12, -8), textcoords='offset points',
-                fontsize=8, fontweight='bold', color=col_sens)
-
-ax_a.set_xlim(0, 1.0); ax_a.set_ylim(-0.05, 1.05); ax_a_r.set_ylim(-1, 0)
-ax_a.set_xlabel(r'Dimensionless time  $x = k\,t\,/\,\lambda$', fontsize=9)
-ax_a.set_ylabel(r'$R(x) = e^{-\lambda x}$', fontsize=9, color=col_decay)
-ax_a_r.set_ylabel(r'$\partial R / \partial\lambda$', fontsize=9, color=col_sens)
-ax_a.tick_params(axis='y', colors=col_decay)
-ax_a_r.tick_params(axis='y', colors=col_sens)
-ax_a_r.spines['right'].set_visible(True); ax_a_r.spines['right'].set_color(col_sens)
-ax_a.spines['left'].set_color(col_decay)
-
-ax_a.text(0.08, 0.08, 'Rejection\nphase', transform=ax_a.transAxes,
-          fontsize=8, color=col_early, fontstyle='italic')
-ax_a.text(0.62, 0.08, 'Selection\nphase', transform=ax_a.transAxes,
-          fontsize=8, color=col_late, fontstyle='italic')
-
-lines_a = [l for l in ax_a.get_lines() + ax_a_r.get_lines()
-           if not l.get_label().startswith('_')]
-labels_a = [l.get_label() for l in lines_a]
-ax_a.legend(lines_a, labels_a, loc='center right', frameon=True,
-            fontsize=7.5, fancybox=False, edgecolor='0.7')
-ax_a.set_title('Sensitivity of reliability to rate perturbations',
-               pad=6, fontsize=10)
-
-# ---- TOP RIGHT (B): Global scalp potential + S(x) fit ----
-ax_b = fig.add_subplot(gs_top_right[0, 0])
+# ---- TOP (A): Global scalp potential + S(x) fit (spans the full width) ----
+ax_b = fig.add_subplot(gs_outer[0, :])
 col_gsp = '#c44e52'
 
 ax_b.plot(t_sm, sm_gsp, color=col_gsp, lw=1.0, alpha=0.35,
@@ -419,7 +372,7 @@ ax_d.legend(loc='lower center', fontsize=7.5, frameon=False)
 # LaTeX \caption (journal auto-numbering), avoiding "Figure 2 ... Figure 2 —"
 # duplication. (N is reported in the caption and Panel D legend.)
 
-for ax, letter in [(ax_a, 'A'), (ax_b, 'B'), (ax_topo1, 'C'), (ax_d, 'D')]:
+for ax, letter in [(ax_b, 'A'), (ax_topo1, 'B'), (ax_d, 'C')]:
     ax.text(-0.08, 1.08, letter, transform=ax.transAxes,
             fontsize=16, fontweight='bold', va='bottom', ha='left')
 
