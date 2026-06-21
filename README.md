@@ -35,16 +35,16 @@ reproduce('raw')     % from raw data (requires data/raw/)
 
 ## Data
 
-### Preprocessed data (included in this repository; also archived on Zenodo)
+### Preprocessed data
 
-| Directory | Contents | Size |
-|-----------|----------|------|
-| `data/preprocessed/ClickTimes/` | Click response times (CSV + JSON sidecar) | 32 KB |
-| `data/preprocessed/Haptics/` | Haptic feedback time series (gzipped CSV) | 18 MB |
-| `data/preprocessed/EDA/` | Electrodermal activity (CSV + JSON sidecars) | 50 MB |
-| `data/preprocessed/EEG/` | Global scalp potential, per-channel, and parietal hemisphere data (MAT files); plus 250 Hz cleaned `.fif` per dyad/participant for the aperiodic-exponent pipeline (`data/preprocessed/EEG/pceXX/`) | 7 MB + ~120 MB FIF |
+The smaller derived files (click times, haptics, EDA, and the global-scalp-potential MAT files) are included in this repository under `data/preprocessed/`. The larger EEG inputs are archived on Zenodo — concept DOI [10.5281/zenodo.19425013](https://doi.org/10.5281/zenodo.19425013), which always resolves to the latest version:
 
-These files are also archived on Zenodo: [10.5281/zenodo.19425014](https://doi.org/10.5281/zenodo.19425014). To set up from the Zenodo archive, download `preprocessed.zip` and unzip it into `data/`.
+| File on Zenodo | Unzip into | Contents |
+|---|---|---|
+| `preprocessed.zip` | `data/` | the preprocessed CSV/MAT files, including the 64-channel `allchannel_data.mat` |
+| `eeg_task_raw_fif.zip` (~4.3 GB) | `data/preprocessed/EEG/` | the 62 cleaned, **preprocessed** continuous EEG recordings (one per participant), as per-dyad `pceXX/` folders, read by the aperiodic-exponent (1/f) pipeline |
+
+> **Note on the `.fif` naming.** The per-participant files are named `pceXX_PY_task-raw.fif`. The `-raw.fif` suffix is MNE-Python's required label for a *continuous* recording (an `mne.Raw` object); it does **not** mean the data are unprocessed — they are bandpass-filtered 1–40 Hz, resampled to 250 Hz, bad-channel interpolated, and average-referenced.
 
 ### Raw data (on OSF, required only for re-running preprocessing)
 

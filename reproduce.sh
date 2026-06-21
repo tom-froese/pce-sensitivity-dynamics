@@ -11,7 +11,7 @@
 #   Python 3.9+ with MNE-Python, matplotlib, numpy, pandas, scipy
 #
 # Data:
-#   Preprocessed: https://doi.org/10.5281/zenodo.19425014
+#   Preprocessed: https://doi.org/10.5281/zenodo.19425013
 #   Raw:          https://osf.io/47n3p
 
 set -euo pipefail
@@ -97,7 +97,8 @@ else
     if $MISSING; then
         echo ""
         echo "  Some preprocessed files are missing. Either:"
-        echo "    1. Download preprocessed data from https://doi.org/10.5281/zenodo.19425014"
+        echo "    1. Download preprocessed.zip (unzip into data/) and eeg_task_raw_fif.zip"
+        echo "       (unzip into data/preprocessed/EEG/) from https://doi.org/10.5281/zenodo.19425013"
         echo "    2. Run ./reproduce.sh --from-raw (requires raw data)"
         exit 1
     fi

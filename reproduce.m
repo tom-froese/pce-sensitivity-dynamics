@@ -9,7 +9,7 @@ function reproduce(fromRaw)
 %   Python 3.9+ with MNE-Python, matplotlib, numpy, pandas, scipy
 %
 % Data:
-%   Preprocessed: https://doi.org/10.5281/zenodo.19425014
+%   Preprocessed: https://doi.org/10.5281/zenodo.19425013
 %   Raw:          https://osf.io/47n3p
 
 close all; clc;
@@ -83,7 +83,8 @@ else
 
     if missing
         fprintf('\n  Some preprocessed files are missing. Either:\n');
-        fprintf('    1. Download from https://doi.org/10.5281/zenodo.19425014\n');
+        fprintf(['    1. Download preprocessed.zip (-> data/) and eeg_task_raw_fif.zip\n' ...
+                 '       (-> data/preprocessed/EEG/) from https://doi.org/10.5281/zenodo.19425013\n']);
         fprintf('    2. Run reproduce(''raw'') (requires data/raw/)\n');
         error('Missing preprocessed data.');
     end
