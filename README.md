@@ -8,9 +8,9 @@ Code and data for:
 
 ## Overview
 
-This repository contains all code needed to reproduce the three figures reported in the paper. We show that participants in a perceptual crossing experiment (PCE) exhibit sensitivity dynamics consistent with the derivative of an exponential reliability decay with rate parameter lambda = *e*:
+This repository contains all code needed to reproduce the data figures reported in the paper. We show that participants in a perceptual crossing experiment (PCE) exhibit sensitivity dynamics consistent with the derivative of an exponential reliability decay with rate parameter Λ = *e*:
 
-    S(x) = |dR/dlambda| = x * exp(-e * x)
+    S(x) = |dR/dΛ| = x * exp(-e * x)
 
 This sensitivity function peaks at *x* = 1/*e*, the optimal stopping point of the 1/*e*-law, and is reflected in behavioral responses (click times), autonomic arousal (electrodermal activity), neural activity (global scalp potential), and perceptual awareness (PAS ratings).
 
