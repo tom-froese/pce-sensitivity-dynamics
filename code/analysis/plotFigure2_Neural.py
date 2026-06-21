@@ -8,10 +8,10 @@ Three panels:
   (A) — Global scalp potential (64-channel mean) grand median, full width,
              overlaid with the free-tau S(x) = A*x*exp(-e*x) + B fit.
 
-  (B) — Scalp-map triptych (all 64 channels, uncorrected):
-             (i)   R^2_free — where does the sensitivity model fit?
-             (ii)  tau* — best-fit boot-up lag per channel
-             (iii) Signed trough value — effect size and polarity
+  (B) — Locked-τ R² scalp map (all 64 channels): where does the parameter-free
+             prediction (Λ = e, τ = 3.9 s) fit, per channel? The free-τ* and
+             signed-trough maps were dropped — τ is fixed everywhere else, and we
+             make no per-channel magnitude prediction (baseline-confounded).
 
   (C) — Cohort 1/f aperiodic exponent (FOOOF) per within-trial bin,
              overlaid with the FIXED-parameter S(x) fit (Λ = e,
@@ -253,15 +253,15 @@ fig = plt.figure(figsize=(12.0, 8.5))
 gs_outer = GridSpec(
     2, 2,
     height_ratios=[0.85, 1.1],
-    width_ratios=[1.3, 1.0],
+    width_ratios=[0.85, 1.15],
     hspace=0.34, wspace=0.30,
     left=0.06, right=0.96, top=0.95, bottom=0.07,
 )
 # Top row (A): the global scalp potential, spanning the full width.
-# Bottom-left (B): the three scalp maps (sub-gridspec 1×3); bottom-right (C):
-# the aperiodic exponent. The conceptual sensitivity schematic that used to be
+# Bottom-left (B): a single locked-τ R² scalp map; bottom-right (C): the
+# aperiodic exponent. The conceptual sensitivity schematic that used to be
 # Panel A is now a standalone figure in the main text, not a panel here.
-gs_bot_left  = GridSpecFromSubplotSpec(1, 3, subplot_spec=gs_outer[1, 0], wspace=0.35)
+gs_bot_left  = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_outer[1, 0])
 gs_bot_right = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_outer[1, 1])
 
 # ---- TOP (A): Global scalp potential + S(x) fit (spans the full width) ----
@@ -295,35 +295,19 @@ ax_b.set_title(rf'Global scalp potential — $S(x)$ fit  '
                pad=6, fontsize=10)
 ax_b.legend(loc='upper right', frameon=False, fontsize=7.5)
 
-# ---- BOTTOM LEFT (C): three scalp maps ----
-ax_topo1 = fig.add_subplot(gs_bot_left[0, 0])
-ax_topo2 = fig.add_subplot(gs_bot_left[0, 1])
-ax_topo3 = fig.add_subplot(gs_bot_left[0, 2])
-
-im1, _ = mne.viz.plot_topomap(
-    R2_free_all, info_all, axes=ax_topo1, show=False, cmap='viridis',
+# ---- BOTTOM LEFT (B): locked-τ R² scalp map ----
+# A single map of where the parameter-free prediction (locked τ = 3.9 s) fits,
+# per channel. We drop the free-τ* and signed-trough maps: τ is fixed everywhere
+# else, and we make no per-channel magnitude prediction (the absolute trough
+# amplitude is baseline-confounded under the minimal GSP preprocessing).
+ax_topo = fig.add_subplot(gs_bot_left[0, 0])
+im_r2, _ = mne.viz.plot_topomap(
+    R2_lock_all, info_all, axes=ax_topo, show=False, cmap='viridis',
     vlim=(0, 1), contours=6, sensors=True, extrapolate='local',
 )
-ax_topo1.set_title(r'$R^2_{\mathrm{free}}$  (best-fit quality)',
-                   pad=6, fontsize=9)
-cb1 = fig.colorbar(im1, ax=ax_topo1, shrink=0.75, pad=0.05); cb1.set_label(r'$R^2$')
-
-im2, _ = mne.viz.plot_topomap(
-    tau_all, info_all, axes=ax_topo2, show=False, cmap='coolwarm',
-    contours=6, sensors=True, extrapolate='local',
-)
-ax_topo2.set_title(r'$\tau^{*}$  (best-fit boot-up lag)',
-                   pad=6, fontsize=9)
-cb2 = fig.colorbar(im2, ax=ax_topo2, shrink=0.75, pad=0.05); cb2.set_label(r'$\tau^{*}$ (s)')
-
-tm_max = float(np.nanmax(np.abs(trough_raw)))
-im3, _ = mne.viz.plot_topomap(
-    trough_raw, info_all, axes=ax_topo3, show=False, cmap='RdBu',
-    vlim=(-tm_max, tm_max), contours=6, sensors=True, extrapolate='local',
-)
-ax_topo3.set_title(r'Signed trough value  $A \cdot s(1/e) + B$',
-                   pad=6, fontsize=9)
-cb3 = fig.colorbar(im3, ax=ax_topo3, shrink=0.75, pad=0.05); cb3.set_label(r'$\mu$V')
+ax_topo.set_title(r'$R^2$ of the locked-$\tau$ $S(x)$ fit per channel'
+                  '\n' r'($\Lambda = e$, $\tau = 3.9$ s)', pad=6, fontsize=9)
+cb = fig.colorbar(im_r2, ax=ax_topo, shrink=0.78, pad=0.05); cb.set_label(r'$R^2$')
 
 # ---- BOTTOM RIGHT (D): 1/f aperiodic exponent tracks S(x) ----
 ax_d = fig.add_subplot(gs_bot_right[0, 0])
@@ -376,7 +360,7 @@ ax_d.legend(loc='lower center', fontsize=7.5, frameon=False)
 # LaTeX \caption (journal auto-numbering), avoiding "Figure 2 ... Figure 2 —"
 # duplication. (N is reported in the caption and Panel D legend.)
 
-for ax, letter in [(ax_b, 'A'), (ax_topo1, 'B'), (ax_d, 'C')]:
+for ax, letter in [(ax_b, 'A'), (ax_topo, 'B'), (ax_d, 'C')]:
     ax.text(-0.08, 1.08, letter, transform=ax.transAxes,
             fontsize=16, fontweight='bold', va='bottom', ha='left')
 
