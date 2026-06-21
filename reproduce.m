@@ -28,7 +28,7 @@ else
 end
 
 fprintf('=============================================\n');
-fprintf('  Reproducing: Froese (2026) PNAS Brief Report\n');
+fprintf('  Reproducing: Froese (2026) PNAS Nexus Research Report\n');
 fprintf('  Mode: %s\n', mode);
 fprintf('=============================================\n\n');
 
@@ -49,10 +49,10 @@ if fromRaw
     runStep(prepDir, 'preprocessGSP',                '1d', 'Preprocessing global scalp potential');
     runStep(prepDir, 'computeGSPStats',              '1e', 'Computing GSP statistics');
     runStep(prepDir, 'extractAllChannels',            '1f', 'Extracting all 64 EEG channels');
-    runStep(prepDir, 'extractParietalHemispheres',    '1g', 'Extracting parietal hemisphere data');
     runStep(prepDir, 'computePerChannelFits',         '1h', 'Computing per-channel sensitivity fits');
     runStep(prepDir, 'computePASProportions',         '1i', 'Computing PAS proportions');
-    runPythonStep(fullfile(prepDir, 'preprocessEEGForExponent.py'), '1j --all', ...
+    runStep(anaDir,  'computePASCrossover',           '1j', 'Computing PAS crossover statistics');
+    runPythonStep(fullfile(prepDir, 'preprocessEEGForExponent.py'), '1k --all', ...
                   'Preprocessing 250 Hz cleaned EEG for the aperiodic-exponent analysis');
 
     fprintf('\n  Step 1 complete.\n\n');
@@ -67,9 +67,9 @@ else
         'data/preprocessed/EEG/globalScalpPotential_data.mat'
         'data/preprocessed/EEG/globalScalpPotential_stats.mat'
         'data/preprocessed/EEG/allchannel_data.mat'
-        'data/preprocessed/EEG/parietal_hemisphere_data.mat'
         'data/preprocessed/EEG/pce01/pce01_P1_task-raw.fif'
         'results/Figure3_pas_proportions.csv'
+        'results/Figure3_crossover_stats.csv'
     };
 
     missing = false;
@@ -107,8 +107,9 @@ fprintf('\n--- Step 3: Generating manuscript figures ---\n');
 runStep(anaDir, 'plotFigure1_Behavioral', '3a', 'Figure 1: Behavioral and bodily evidence');
 runPythonStep(fullfile(anaDir, 'plotFigure2_Neural.py'), '3b', 'Figure 2: Neural evidence');
 
-runStep(anaDir, 'computePASCrossover',    '3c', 'PAS crossover statistics');
-runStep(anaDir, 'plotFigure3_Perceptual', '3d', 'Figure 3: Perceptual evidence');
+runStep(anaDir, 'plotFigure3_Perceptual', '3c', 'Figure 3: Perceptual evidence');
+runPythonStep(fullfile(anaDir, 'plotFigConcept_Sensitivity.py'), '3e', ...
+              'Sensitivity-framework concept figure (R(x), S(x) curves)');
 
 fprintf('\n=============================================\n');
 fprintf('  Done. Figures saved to results/\n');
@@ -116,7 +117,8 @@ fprintf('=============================================\n');
 
 for pat = {'Figure1_*.pdf', 'Figure1_*.png', ...
            'Figure2_*.pdf', 'Figure2_*.png', ...
-           'Figure3_*.pdf', 'Figure3_*.png'}
+           'Figure3_*.pdf', 'Figure3_*.png', ...
+           'FigConcept_*.pdf', 'FigConcept_*.png'}
     d = dir(fullfile(ROOT, 'results', pat{1}));
     for i = 1:numel(d)
         fprintf('  %s  (%d KB)\n', d(i).name, round(d(i).bytes/1024));
