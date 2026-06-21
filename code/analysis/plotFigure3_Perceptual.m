@@ -115,13 +115,20 @@ hold on;
 % Crossover CI shading (behind everything)
 fill([ci_lo ci_hi ci_hi ci_lo], [-8 -8 62 62], ...
     col_sens, 'FaceAlpha', 0.07, 'EdgeColor', 'none', ...
-    'DisplayName', sprintf('95%% CI [%.0f, %.0f] s', ci_lo, ci_hi));
+    'DisplayName', sprintf('95%% CI [%.1f, %.1f] s', ci_lo, ci_hi));
 
 % Logistic crossover
 xline(tcross, '-', 'Color', [0.33 0.33 0.33], 'LineWidth', 1.5, 'Alpha', 0.7, ...
     'HandleVisibility', 'off');
 plot(nan, nan, '-', 'Color', [0.33 0.33 0.33], 'LineWidth', 1.5, ...
     'DisplayName', sprintf('Crossover = %.1f s (logistic)', tcross));
+
+% Predicted sensitivity peak (1/e landmark), dashed — matches main-text caption
+tpeak = 24.5;  % canonical click-density sensitivity peak (s)
+xline(tpeak, '--', 'Color', col_sens, 'LineWidth', 1.5, 'Alpha', 0.85, ...
+    'HandleVisibility', 'off');
+plot(nan, nan, '--', 'Color', col_sens, 'LineWidth', 1.5, ...
+    'DisplayName', sprintf('Sensitivity peak = %.1f s', tpeak));
 
 % PAS traces (4 → 1 for z-ordering)
 % Error bars drawn separately so they can be thinner than data lines.

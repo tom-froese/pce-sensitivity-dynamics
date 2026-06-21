@@ -353,7 +353,7 @@ fprintf('  Panel C residual (t >= %.1f s):  SD = %.3f uS (raw), %.3f uS (smoothe
     tau_eda_opt, std(resid_C_full, 'omitnan'), std(resid_C_smooth, 'omitnan'));
 
 %% ========================================================================
-%  CREATE FIGURE — 2 rows x 3 panels
+%  CREATE FIGURE — single row, 3 panels (residual band removed)
 %  ========================================================================
 
 fprintf('\nCreating Figure 1 ...\n');
@@ -373,7 +373,7 @@ font_sz_annot = 8;
 font_sz_panel = 14;
 
 % PNAS double-column width: 7.09 in
-fig_w = 7.5;  fig_h = 4.2;
+fig_w = 7.5;  fig_h = 3.0;
 fig = figure('Units', 'inches', 'Position', [0.5 0.5 fig_w fig_h], ...
     'Color', 'w', 'PaperUnits', 'inches', ...
     'PaperSize', [fig_w fig_h], 'PaperPosition', [0 0 fig_w fig_h]);
@@ -381,9 +381,8 @@ fig = figure('Units', 'inches', 'Position', [0.5 0.5 fig_w fig_h], ...
 % Margins (normalised) — top margin generous so that bold panel labels
 % "A", "B", "C" (rendered at y = 1.08 of axes) and the panel titles are
 % never clipped by the figure boundary.
-ml = 0.07;  mr = 0.02;  mb = 0.08;  mt = 0.11;
+ml = 0.07;  mr = 0.02;  mb = 0.14;  mt = 0.11;
 gap_ab = 0.07;  gap_bc = 0.07;
-gap_rows = 0.10;
 total_w = 1 - ml - mr - gap_ab - gap_bc;
 % Equal panel widths so the time axes of A, B, C line up one-to-one and
 % the residuals below them are directly comparable.
@@ -391,12 +390,10 @@ pw_a = total_w / 3;
 pw_b = total_w / 3;
 pw_c = total_w / 3;
 
-% Row heights
-avail_h = 1 - mb - mt - gap_rows;
-ph_top = avail_h * 0.70;       % top row is the larger band (2/3 of previous)
-ph_bot = avail_h - ph_top;     % residual band gets ~30% of vertical space
-row_bot_y = mb;
-row_top_y = mb + ph_bot + gap_rows;
+% Single full-height row of panels (residual band removed)
+avail_h = 1 - mb - mt;
+ph_top = avail_h;
+row_top_y = mb;
 
 % Column x-positions
 x_a = ml;
@@ -428,7 +425,8 @@ xlim([0 T_trial]);
 ylim([0 max(counts) * 1.35]);
 ylabel('Number of clicks', 'FontSize', font_sz_label);
 title('Click response times', 'FontSize', font_sz_title, 'FontWeight', 'bold');
-set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out', 'XTickLabel', []);
+set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out');
+xlabel('Time (s)', 'FontSize', font_sz_label);
 
 % Place the T_eff/e label well below the peak of the red fit curve so
 % the curve sits cleanly above the annotation. A white background keeps
@@ -492,7 +490,8 @@ xlim([0 60]);
 ylim([0 max((propON + semON) * 100) * 1.1]);
 ylabel('Trials with active contact (%)', 'FontSize', font_sz_label);
 title('Haptic feedback activation', 'FontSize', font_sz_title, 'FontWeight', 'bold');
-set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out', 'XTickLabel', []);
+set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out');
+xlabel('Time (s)', 'FontSize', font_sz_label);
 
 lg_b = legend('Location', 'southeast', 'Box', 'off', 'FontSize', font_sz_annot);
 lg_b.ItemTokenSize = [15, 8];
@@ -526,7 +525,8 @@ xlim([0 60]);
 ylabel('EDA (\muS)', 'FontSize', font_sz_label);
 title(sprintf('Decay of arousal (N=%d)', nPart_eda), ...
     'FontSize', font_sz_title, 'FontWeight', 'bold');
-set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out', 'XTickLabel', []);
+set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out');
+xlabel('Time (s)', 'FontSize', font_sz_label);
 
 text(0.97, 0.95, ...
     {sprintf('\\tau = %.1f s (locked)', tau_eda_opt), ...
@@ -542,64 +542,6 @@ legend([h_eda_data, h_eda_fit], ...
 
 text(-0.16, 1.08, 'C', 'Units', 'normalized', ...
     'FontSize', font_sz_panel, 'FontWeight', 'bold');
-
-%% ---- BOTTOM-ROW Panel A residual ---------------------------------------
-
-ax_ar = axes('Position', [x_a, row_bot_y, pw_a, ph_bot]);
-hold on;
-yline(0, '-', 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5);
-% Raw per-bin residual (counts minus fit at each 2-s bin) drawn as bars
-% to mirror the histogram in the top panel; smoothed KDE-based residual
-% overlaid in bold (same role as the KDE line up top).
-bar(bin_centres, resid_A_bins, 1, ...
-    'FaceColor', col_data, 'FaceAlpha', 0.30, ...
-    'EdgeColor', 'w', 'LineWidth', 0.5);
-plot(xi_kde, resid_A_full, '-', 'Color', col_data, 'LineWidth', 1.5);
-% Boot-up marker (same dotted grey line as the top panel)
-xline(TAU_LOCK, ':', 'Color', col_grey, 'LineWidth', 1.2);
-hold off;
-xlim([0 T_trial]);
-yl = ylim; ylim([-max(abs(yl)) max(abs(yl))]);
-xlabel('Time (s)', 'FontSize', font_sz_label);
-ylabel('Residual (counts)', 'FontSize', font_sz_label);
-set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out');
-
-%% ---- BOTTOM-ROW Panel B residual ---------------------------------------
-% No boot-up marker: the haptic channel has no tau-offset boot-up.
-
-ax_br = axes('Position', [x_b, row_bot_y, pw_b, ph_bot]);
-hold on;
-yline(0, '-', 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5);
-% The haptic residual is sampled at 100 Hz, so the raw trace is ~200x
-% denser than panel A's per-bin residual. Drop alpha and linewidth so
-% the scatter reads as a faint background and the smoothed line stands
-% out clearly.
-plot(timeVec_h, resid_B_raw,    '-', 'Color', [col_data 0.10], 'LineWidth', 0.3);
-plot(timeVec_h, resid_B_smooth, '-', 'Color', col_data,        'LineWidth', 1.5);
-hold off;
-xlim([0 60]);
-yl = ylim; ylim([-max(abs(yl)) max(abs(yl))]);
-xlabel('Time (s)', 'FontSize', font_sz_label);
-ylabel('Residual (%)', 'FontSize', font_sz_label);
-set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out');
-
-%% ---- BOTTOM-ROW Panel C residual ---------------------------------------
-
-ax_cr = axes('Position', [x_c, row_bot_y, pw_c, ph_bot]);
-hold on;
-yline(0, '-', 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5);
-% Use the same blue as panels A and B — residual traces are conceptually
-% comparable across panels, so a shared colour makes that explicit.
-plot(time_eda, resid_C_full,   '-', 'Color', [col_data 0.35], 'LineWidth', 0.6);
-plot(time_eda, resid_C_smooth, '-', 'Color', col_data,       'LineWidth', 1.5);
-% Boot-up marker
-xline(tau_eda_opt, ':', 'Color', col_grey, 'LineWidth', 1.2);
-hold off;
-xlim([0 60]);
-yl = ylim; ylim([-max(abs(yl)) max(abs(yl))]);
-xlabel('Time (s)', 'FontSize', font_sz_label);
-ylabel('Residual (\muS)', 'FontSize', font_sz_label);
-set(gca, 'FontSize', font_sz, 'Box', 'off', 'TickDir', 'out');
 
 %% ========================================================================
 %  SAVE

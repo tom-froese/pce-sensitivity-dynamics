@@ -414,9 +414,10 @@ ax_d.set_title(r'1/f aperiodic exponent tracks $S(x)$' '\n'
                pad=6, fontsize=10)
 ax_d.legend(loc='lower center', fontsize=7.5, frameon=False)
 
-# ---- Panel letters and suptitle ----
-fig.suptitle(rf'Figure 2 — Neural evidence  (N = {n_part} participants)',
-             y=0.96, fontsize=12, fontweight='bold')
+# ---- Panel letters ----
+# No baked-in super-title: the figure number and title are supplied by the
+# LaTeX \caption (journal auto-numbering), avoiding "Figure 2 ... Figure 2 —"
+# duplication. (N is reported in the caption and Panel D legend.)
 
 for ax, letter in [(ax_a, 'A'), (ax_b, 'B'), (ax_topo1, 'C'), (ax_d, 'D')]:
     ax.text(-0.08, 1.08, letter, transform=ax.transAxes,
