@@ -228,7 +228,10 @@ with open(EXP_JSON) as fh:
 # console (fitExponentSensitivity.py prints them).
 exp_R2_fixed = exp_meta['head_to_head_R2']['sensitivity_peak_lambda_e']
 exp_ci   = exp_meta['bootstrap_peak_ci']          # {n_resamples, median_s, ci95_s}
-pas_s    = exp_meta['framework']['pas_crossover_s']
+# PAS 4->3 crossover: use the canonical within-participant value (28.4 s, same
+# as Fig 5 and the main text) from Figure3_crossover_stats.csv — not the per-bin
+# sidecar value (exp_meta['framework']['pas_crossover_s'] = 29.0).
+pas_s    = float(pd.read_csv(ROOT / 'results' / 'Figure3_crossover_stats.csv')['trial_crossover_s'].iloc[0])
 t_oe_exp = TAU_LOCKED + (T_TRIAL - TAU_LOCKED) / E  # 1/e marker @ population τ
 
 print(f'\nAperiodic exponent (Panel D): n={exp_meta["n_participants"]}, '
@@ -356,9 +359,9 @@ ax_d.plot(t_fit_d, y_fit_d, color=col_fit, lw=2.2, zorder=3,
 
 # Verticals: 1/e (locked-τ convention) and PAS 4→3.
 ax_d.axvline(t_oe_exp, color=col_oe, ls=':', lw=1.5, zorder=1,
-             label=f'1/e ({t_oe_exp:.0f} s)')
+             label=f'1/e ({t_oe_exp:.1f} s)')
 ax_d.axvline(pas_s, color=col_pas, ls='-.', lw=1.5, zorder=1,
-             label=f'PAS 4→3 ({pas_s:.0f} s)')
+             label=f'PAS 4→3 ({pas_s:.1f} s)')
 
 ax_d.set_xlim(0, 60)
 ax_d.set_xlabel('Time (s)')
