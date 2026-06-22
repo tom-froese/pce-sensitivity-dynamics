@@ -49,7 +49,14 @@ if $FROM_RAW; then
     echo "  [1c] Preprocessing EDA..."
     matlab -batch "cd('code/preprocessing'); preprocessEDA"
 
-    echo "  [1d] Preprocessing global scalp potential..."
+    # --- TWO EEG FILTERING REGIMES (do not cross the streams; see dossier 2026-06-22) ---
+    #  Slow-trend analyses (GSP Panel A + per-channel topomap Panel B, steps 1d-1g)
+    #    need UNFILTERED, DC-coupled uV-scale RAW EEG (data/raw/EEG/*.mat). A high-pass
+    #    destroys the ~0.02-0.03 Hz S(x) slow trend. extractAllChannels/computePerChannelFits
+    #    now hard-error if fed filtered/volts-scale data.
+    #  Aperiodic-exponent analysis (Panel C, step 1k) uses the 1-40 Hz bandpass *-raw.fif.
+    #  These inputs are NOT interchangeable.
+    echo "  [1d] Preprocessing global scalp potential (UNFILTERED raw)..."
     matlab -batch "cd('code/preprocessing'); preprocessGSP"
 
     echo "  [1e] Computing GSP statistics..."

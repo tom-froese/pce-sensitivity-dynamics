@@ -6,6 +6,11 @@
 % Topographic maps of tau*, R^2(tau*), delta-R^2, |trough amplitude|,
 % plus comparison to tau-locked (3.90 s) R^2.
 %
+% REQUIRES UNFILTERED, DC-COUPLED, uV-SCALE RAW EEG (allchannel_data.mat from
+% extractAllChannels.m -> data/raw/EEG). Do NOT feed it the 1-40 Hz *-raw.fif
+% (aperiodic-exponent input): its 1 Hz high-pass strips the slow S(x) trend.
+% A guardrail (section 2b) errors out if filtered/volts-scale data is passed.
+%
 % Pipeline per channel:
 %   - grand-median timecourse across participants
 %   - 5-s moving average (valid)
@@ -66,6 +71,44 @@ fprintf('Loaded: n_part = %d, n_chan = %d\n', n_part, n_chan);
 win   = round(SMOOTH_WIN * FS);
 halfK = floor(win / 2);
 kernel = ones(1, win) / win;
+
+%% ========================================================================
+%  2b. INPUT GUARDRAIL  --  fail loud on filtered / wrong-source data
+%  ========================================================================
+%  This slow-trend fit REQUIRES unfiltered, DC-coupled, uV-scale RAW EEG
+%  (data/raw/EEG/*.mat via extractAllChannels.m). It must NOT be run on the
+%  1-40 Hz *-raw.fif files (those are MNE/volts-scale and are exclusively for
+%  the aperiodic-exponent analysis): a 1 Hz high-pass destroys the ~0.02-0.03 Hz
+%  S(x) slow trend, collapsing every fit to R^2 ~ 0.1. (See dossier 2026-06-22:
+%  a FIF-derived allchannel_data.mat silently replaced the raw one and broke the
+%  topomap.) The two checks below catch that the moment it happens.
+
+% (i) Scale: MNE/FIF data is in volts (~1e-4); raw .mat is in uV (~1e1-1e3).
+maxAbs = max(abs(allTC(:)));
+if maxAbs < 1e-2
+    error('computePerChannelFits:voltsScale', ...
+        ['Input looks VOLTS-scale (max|amp| = %.2e) = MNE/FIF-derived.\n' ...
+         'This per-channel slow-trend fit needs uV-scale, DC-coupled RAW EEG via\n' ...
+         'extractAllChannels.m, NOT the 1-40 Hz *-raw.fif. Regenerate ' ...
+         'allchannel_data.mat from data/raw/EEG. (dossier 2026-06-22)'], maxAbs);
+end
+
+% (ii) Slow trend present: the across-channel mean (proto-GSP) must itself fit
+%      S(x); a high-pass would flatten it. The true GSP fits at R^2 ~ 0.82, so a
+%      0.3 floor is a wide safety margin that only a filtered input would fail.
+gmean   = squeeze(mean(median(allTC, 1), 2))';        % 1 x 600 channel-mean of grand median
+gmean_s = conv(gmean, kernel, 'valid');
+t_gmean = tTask(halfK+1 : halfK+length(gmean_s));
+r_gmean = fitAtTau(gmean_s, t_gmean, TAU_LOCKED, T_TRIAL, E, MIN_TEFF);
+gmeanR2 = NaN; if ~isempty(r_gmean), gmeanR2 = r_gmean.R2; end
+if ~(gmeanR2 >= 0.3)
+    error('computePerChannelFits:noSlowTrend', ...
+        ['Channel-mean S(x) fit R^2 = %.3f < 0.30 -- the slow trend is missing,\n' ...
+         'consistent with high-passed input. This analysis needs UNFILTERED raw\n' ...
+         'EEG (the 1-40 Hz FIF strips the slow trend). (dossier 2026-06-22)'], gmeanR2);
+end
+fprintf('Guardrail OK: uV-scale (max|amp|=%.1f uV), slow trend present (channel-mean R^2=%.2f).\n', ...
+    maxAbs, gmeanR2);
 
 %% ========================================================================
 %  3. SWEEP ALL CHANNELS

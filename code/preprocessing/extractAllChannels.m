@@ -95,6 +95,19 @@ dyadFolders = dyadFolders(si);
 nDyads      = length(dyadFolders);
 fprintf('Found %d dyad folders (excluding dyad %d)\n\n', nDyads, excludeDyad);
 
+% GUARDRAIL: if no raw dyad folders are found, FAIL rather than silently writing
+% an empty allchannel_data.mat (which would then be "fixed" from the wrong source
+% -- e.g. the 1-40 Hz FIF, see dossier 2026-06-22). The raw .mat live in the
+% master loop: pce-master-loop/data/raw/EEG (or fetch from OSF). On Tom's machine
+% the spoke path data/raw/EEG is a symlink to it.
+if nDyads == 0
+    error('extractAllChannels:noRawData', ...
+        ['No raw dyad folders (pceXXYYMMDD/) under:\n  %s\n' ...
+         'Raw EEG lives in pce-master-loop/data/raw/EEG (symlink it here) or fetch\n' ...
+         'from OSF. This unfiltered raw is REQUIRED for the slow-trend GSP/per-channel\n' ...
+         'fits; the 1-40 Hz *-raw.fif is NOT a substitute. (dossier 2026-06-22)'], dataDir);
+end
+
 %% ========================================================================
 %  3. EXTRACT AND AGGREGATE
 %  ========================================================================
