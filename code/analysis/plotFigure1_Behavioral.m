@@ -10,7 +10,7 @@
 % with a slow-oscillation signature.
 %
 %   Panel A — Click Response-Time Distribution
-%     Click-response times follow P(x) = A * x * exp(-e * x) where
+%     Click-response times follow S(x) = A * x * exp(-e * x) where
 %     x = (t - tau) / (T - tau), lambda = e fixed, tau locked to 3.9 s.
 %     Residual: KDE minus the fit P(t), shown raw + lightly smoothed.
 %     The residual is left blank during the boot-up (t < tau), since
@@ -437,7 +437,7 @@ text(best.peak_time + 0.4, peak_y * 0.55, 'T_{eff}/e', ...
     'HorizontalAlignment', 'left', 'VerticalAlignment', 'middle', ...
     'BackgroundColor', 'w', 'Margin', 1);
 
-lg_a = legend({'Clicks', 'KDE', 'P(x) = A \cdot x \cdot exp(-ex)'}, ...
+lg_a = legend({'Clicks', 'KDE', 'S(x) = A \cdot x \cdot exp(-ex)'}, ...
     'FontSize', font_sz_annot, 'Location', 'northwest');
 lg_a.BoxFace.ColorType = 'truecoloralpha';
 lg_a.BoxFace.ColorData = uint8([255; 255; 255; 255]);
@@ -562,7 +562,7 @@ fprintf('\n==========================================================\n');
 fprintf('  FIGURE 1 SUMMARY (Bodily Evidence)\n');
 fprintf('==========================================================\n');
 fprintf('  Panel A — Click Response Times  (tau locked = %.2f s)\n', TAU_LOCK);
-fprintf('    Clicks: %d,  P(x) R^2 = %.3f,  peak = %.1f s,  A = %.3f\n', ...
+fprintf('    Clicks: %d,  S(x) R^2 = %.3f,  peak = %.1f s,  A = %.3f\n', ...
     n_clicks, best.R2, best.peak_time, best.A);
 fprintf('    Residual SD: %.2f counts (KDE), %.2f counts (bins)\n', ...
     std(resid_A_full, 'omitnan'), std(resid_A_bins, 'omitnan'));
@@ -586,7 +586,7 @@ fprintf('Done.\n');
 %  ========================================================================
 
 function res = fit_sensitivity_kde(offset, xi_kde, f_kde, T, lambda)
-% Fit click-probability curve P(x) = A * x * exp(-lambda * x) to KDE density.
+% Fit click sensitivity curve S(x) = A * x * exp(-lambda * x) to KDE density.
 % x = (t - offset) / (T - offset), lambda fixed. A by scalar projection.
 
     T_eff = T - offset;
