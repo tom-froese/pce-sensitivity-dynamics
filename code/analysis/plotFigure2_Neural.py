@@ -355,7 +355,7 @@ ax_d.set_title(r'1/f aperiodic exponent tracks $S(x)$' '\n'
                pad=6, fontsize=10)
 # Boxed legend with an opaque white background: the lower-centre legend sits
 # over the CI band and reference verticals, so an opaque box keeps it legible.
-ax_d.legend(loc='lower center', fontsize=7.5, frameon=True,
+ax_d.legend(loc='lower center', fontsize=11.25, frameon=True,
             facecolor='white', edgecolor='0.7', framealpha=1.0).set_zorder(5)
 
 # ---- Panel letters ----
