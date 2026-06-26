@@ -271,14 +271,14 @@ col_gsp = '#c44e52'
 ax_b.plot(t_sm, sm_gsp, color=col_gsp, lw=1.0, alpha=0.35,
           label='Global scalp potential (64-ch mean)')
 ax_b.plot(fit_gsp['t_fit'], fit_gsp['yhat'], color=col_gsp, lw=2.5,
-          label=rf'$\tau^*$={TAU_GSP:.1f} s,  '
-                rf'A={fit_gsp["A"]:+.1f} $\mu$V,  '
+          label=rf'$\tau^*$={TAU_GSP:.0f} s,  '
+                rf'A={fit_gsp["A"]:+.0f} $\mu$V,  '
                 rf'$R^2$={fit_gsp["R2"]:.2f}')
 
 y_trough_raw = fit_gsp['A'] * (1.0 / E) * np.exp(-1.0) + fit_gsp['B']
 ax_b.plot(fit_gsp['t_trough'], y_trough_raw, 'o',
           mfc=col_gsp, mec='white', mew=1.2, ms=8, zorder=5)
-ax_b.annotate(rf't = {fit_gsp["t_trough"]:.1f} s',
+ax_b.annotate(rf't = {fit_gsp["t_trough"]:.0f} s',
               xy=(fit_gsp['t_trough'], y_trough_raw),
               xytext=(0, 10), textcoords='offset points',
               ha='center', va='bottom', fontsize=9, fontweight='bold',
@@ -291,7 +291,7 @@ ax_b.set_xlim(t_sm.min(), t_sm.max())
 ax_b.set_xlabel('Time (s)')
 ax_b.set_ylabel(r'Scalp potential ($\mu$V)')
 ax_b.set_title(rf'Global scalp potential — $S(x)$ fit  '
-               rf'(free $\tau^*$ = {TAU_GSP:.1f} s)',
+               rf'(free $\tau^*$ = {TAU_GSP:.0f} s)',
                pad=6, fontsize=10)
 ax_b.legend(loc='upper right', frameon=False, fontsize=7.5)
 
@@ -306,7 +306,7 @@ im_r2, _ = mne.viz.plot_topomap(
     vlim=(0, 1), contours=6, sensors=True, extrapolate='local',
 )
 ax_topo.set_title(r'$R^2$ of the locked-$\tau$ $S(x)$ fit per channel'
-                  '\n' r'($\Lambda = e$, $\tau = 3.9$ s)', pad=6, fontsize=9)
+                  '\n' r'($\Lambda = e$, $\tau = 4$ s)', pad=6, fontsize=9)
 cb = fig.colorbar(im_r2, ax=ax_topo, shrink=0.78, pad=0.05); cb.set_label(r'$R^2$')
 
 # ---- BOTTOM RIGHT (D): 1/f aperiodic exponent tracks S(x) ----
@@ -338,14 +338,14 @@ t_fit_d = np.linspace(TAU_LOCKED, T_TRIAL, 300)
 x_fit_d = (t_fit_d - TAU_LOCKED) / Teff_d
 y_fit_d = A_d * x_fit_d * np.exp(-E * x_fit_d) + B_d
 ax_d.plot(t_fit_d, y_fit_d, color=col_fit, lw=2.2, zorder=3,
-          label=(rf'$S(x)$ fit: $\Lambda = e$, $\tau = {TAU_LOCKED:.1f}$ s (fixed), '
+          label=(rf'$S(x)$ fit: $\Lambda = e$, $\tau = {TAU_LOCKED:.0f}$ s (fixed), '
                  rf'$R^2 = {exp_R2_fixed:.2f}$'))
 
 # Verticals: 1/e (locked-τ convention) and PAS 4→3.
 ax_d.axvline(t_oe_exp, color=col_oe, ls=':', lw=1.5, zorder=1,
-             label=f'1/e ({t_oe_exp:.1f} s)')
+             label=f'1/e ({t_oe_exp:.0f} s)')
 ax_d.axvline(pas_s, color=col_pas, ls='-.', lw=1.5, zorder=1,
-             label=f'PAS 4→3 ({pas_s:.1f} s)')
+             label=f'PAS 4→3 ({pas_s:.0f} s)')
 
 ax_d.set_xlim(0, 60)
 ax_d.set_xlabel('Time (s)')
