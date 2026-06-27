@@ -43,7 +43,8 @@ end
 UNSM  = readtable(unsmFile);
 XOVER = readtable(xoverFile);
 
-T         = 60;
+T          = 60;
+TAU_BOOTUP = 4;   % locked boot-up commitment (s); the shared 1/e structure is built on this
 tcross    = XOVER.trial_crossover_s;
 ci_lo     = XOVER.within_part_ci_lo_s;
 ci_hi     = XOVER.within_part_ci_hi_s;
@@ -123,8 +124,12 @@ xline(tcross, '-', 'Color', [0.33 0.33 0.33], 'LineWidth', 1.5, 'Alpha', 0.7, ..
 plot(nan, nan, '-', 'Color', [0.33 0.33 0.33], 'LineWidth', 1.5, ...
     'DisplayName', sprintf('Crossover = %.0f s (logistic)', tcross));
 
-% Predicted sensitivity peak (1/e landmark), dashed — matches main-text caption
-tpeak = 25;  % canonical click-density sensitivity peak (s)
+% Predicted sensitivity peak: the 1/e landmark of the SHARED dynamical
+% structure — the locked boot-up (TAU_BOOTUP), then 1/e decay over the
+% remaining window. This is the framework's parameter-free prediction
+% (lambda = e), the common anchor all four channels are tested against; it is
+% NOT derived from any single channel (e.g. the click data).
+tpeak = TAU_BOOTUP + (T - TAU_BOOTUP) / exp(1);   % = 4 + 56/e ~ 24.6 s -> 25 s
 xline(tpeak, '--', 'Color', col_sens, 'LineWidth', 1.5, 'Alpha', 0.85, ...
     'HandleVisibility', 'off');
 plot(nan, nan, '--', 'Color', col_sens, 'LineWidth', 1.5, ...
