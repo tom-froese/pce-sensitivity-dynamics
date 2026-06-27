@@ -71,6 +71,7 @@ OUT_PDF = ROOT / 'results' / 'Figure2_Neural.pdf'
 E            = np.e
 T_TRIAL      = 60.0
 TAU_LOCKED   = 3.90
+TAU_BOOTUP   = 4.0   # locked boot-up commitment (s); the shared 1/e landmark is built on this
 SMOOTH_WIN_S = 5.0
 FS           = 10
 
@@ -232,7 +233,7 @@ exp_ci   = exp_meta['bootstrap_peak_ci']          # {n_resamples, median_s, ci95
 # as Fig 5 and the main text) from Figure3_crossover_stats.csv — not the per-bin
 # sidecar value (exp_meta['framework']['pas_crossover_s'] = 29.0).
 pas_s    = float(pd.read_csv(ROOT / 'results' / 'Figure3_crossover_stats.csv')['trial_crossover_s'].iloc[0])
-t_oe_exp = TAU_LOCKED + (T_TRIAL - TAU_LOCKED) / E  # 1/e marker @ population τ
+t_oe_exp = TAU_BOOTUP + (T_TRIAL - TAU_BOOTUP) / E  # 1/e landmark of the shared structure (4 s boot-up + 1/e decay) — same anchor as Fig 5, not tied to the fit's τ
 
 print(f'\nAperiodic exponent (Panel D): n={exp_meta["n_participants"]}, '
       f'FIXED-form S(x) [Λ = e, τ = {TAU_LOCKED:.1f} s]: R²={exp_R2_fixed:.3f}, '
