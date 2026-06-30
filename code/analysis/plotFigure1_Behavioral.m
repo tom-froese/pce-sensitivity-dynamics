@@ -10,7 +10,7 @@
 % with a slow-oscillation signature.
 %
 %   Panel A — Click Response-Time Distribution
-%     Click-response times follow S(x) = A * x * exp(-e * x) where
+%     Click-response times follow A * S(x), with S(x) = -x * exp(-e * x), where
 %     x = (t - tau) / (T - tau), lambda = e fixed, tau locked to 3.9 s.
 %     Residual: KDE minus the fit P(t), shown raw + lightly smoothed.
 %     The residual is left blank during the boot-up (t < tau), since
@@ -314,7 +314,7 @@ fprintf('\n=== Residuals (bottom row) ===\n');
 t_mod_full = xi_kde;
 x_mod_full = (t_mod_full - best.offset) / best.T_eff;
 x_mod_full = max(x_mod_full, 1e-12);
-P_fit_full = best.A .* x_mod_full .* exp(-lambda .* x_mod_full);
+P_fit_full = best.A .* (-x_mod_full .* exp(-lambda .* x_mod_full));
 P_fit_full(t_mod_full < best.offset) = 0;
 % Scale everything to counts for comparability with top panel
 kde_scale = n_clicks * bin_width;
@@ -414,7 +414,7 @@ plot(xi_kde, f_kde * kde_scale, '-', 'Color', col_kde, 'LineWidth', 1.5);
 t_mod = linspace(best.offset, T_trial, 500);
 x_mod = (t_mod - best.offset) / best.T_eff;
 x_mod = max(x_mod, 1e-12);
-y_mod = (best.A .* x_mod .* exp(-lambda .* x_mod)) * kde_scale;
+y_mod = (best.A .* (-x_mod .* exp(-lambda .* x_mod))) * kde_scale;
 plot(t_mod, y_mod, '-', 'Color', col_fit, 'LineWidth', 2);
 
 xline(best.peak_time, ':', 'Color', col_fit, 'LineWidth', 1, 'Alpha', 0.7);
@@ -431,13 +431,13 @@ xlabel('Time (s)', 'FontSize', font_sz_label);
 % Place the T_eff/e label well below the peak of the red fit curve so
 % the curve sits cleanly above the annotation. A white background keeps
 % it readable over the histogram bars.
-peak_y = best.A * (1/lambda) * exp(-1) * kde_scale;
+peak_y = best.A * (-(1/lambda) * exp(-1)) * kde_scale;
 text(best.peak_time + 0.4, peak_y * 0.55, 'T_{eff}/e', ...
     'FontSize', font_sz_annot, 'Color', col_fit, ...
     'HorizontalAlignment', 'left', 'VerticalAlignment', 'middle', ...
     'BackgroundColor', 'w', 'Margin', 1);
 
-lg_a = legend({'Clicks', 'KDE', 'S(x) = A \cdot x \cdot exp(-ex)'}, ...
+lg_a = legend({'Clicks', 'KDE', 'A \cdot S(x),  S(x) = -x e^{-ex}'}, ...
     'FontSize', font_sz_annot, 'Location', 'northwest');
 lg_a.BoxFace.ColorType = 'truecoloralpha';
 lg_a.BoxFace.ColorData = uint8([255; 255; 255; 255]);
@@ -537,7 +537,7 @@ text(0.97, 0.95, ...
     'BackgroundColor', 'w', 'EdgeColor', [0.7 0.7 0.7], 'Margin', 2);
 
 legend([h_eda_data, h_eda_fit], ...
-    {'\pmSEM', 'R(x) = A_0 exp(-ex) + B'}, ...
+    {'\pmSEM', 'A_0 \cdot R(x) + B,  R(x) = e^{-ex}'}, ...
     'FontSize', font_sz_annot, 'Location', 'southwest', 'Box', 'off');
 
 text(-0.16, 1.08, 'C', 'Units', 'normalized', ...
@@ -586,7 +586,7 @@ fprintf('Done.\n');
 %  ========================================================================
 
 function res = fit_sensitivity_kde(offset, xi_kde, f_kde, T, lambda)
-% Fit click sensitivity curve S(x) = A * x * exp(-lambda * x) to KDE density.
+% Fit click sensitivity curve A * S(x), S(x) = -x * exp(-lambda * x), to KDE density.
 % x = (t - offset) / (T - offset), lambda fixed. A by scalar projection.
 
     T_eff = T - offset;
@@ -602,7 +602,7 @@ function res = fit_sensitivity_kde(offset, xi_kde, f_kde, T, lambda)
 
     x = (t_fit - offset) / T_eff;
     x = max(x, eps);
-    y_shape = x .* exp(-lambda .* x);
+    y_shape = -x .* exp(-lambda .* x);  % signed sensitivity S(x) = -x e^{-e x} (a trough)
 
     A = dot(y_shape(:), f_fit(:)) / dot(y_shape(:), y_shape(:));
     y_fitted = A .* y_shape;
