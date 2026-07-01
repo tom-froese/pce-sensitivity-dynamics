@@ -10,9 +10,10 @@ Code and data for:
 
 This repository contains all code needed to reproduce the data figures reported in the paper. We show that participants in a perceptual crossing experiment (PCE) exhibit sensitivity dynamics consistent with the derivative of an exponential reliability decay with rate parameter Λ = *e*:
 
-    S(x) = |dR/dΛ| = x * exp(-e * x)
+    R(x) = exp(-e * x)                # reliability of the prepared state
+    S(x) = dR/dΛ = -x * exp(-e * x)   # signed rate sensitivity (a trough)
 
-This sensitivity function peaks at *x* = 1/*e*, the optimal stopping point of the 1/*e*-law, and is reflected in behavioral responses (click times), autonomic arousal (electrodermal activity), neural activity (global scalp potential), and perceptual awareness (PAS ratings).
+The signed sensitivity `S(x)` reaches its extremum — a trough — at *x* = 1/*e*, the optimal stopping point of the 1/*e*-law. Each empirical readout is an **affine observation** of this geometric function, `A·S(x) + B`, with the readout's direction carried in the fitted gain `A`: a readout that *peaks* (click times, the 1/f aperiodic exponent) simply has `A < 0`, while the global scalp potential troughs with `A > 0`. All four landmark *x* = 1/*e* — across behavioral responses (click times), autonomic arousal (electrodermal activity), neural activity (global scalp potential), and perceptual awareness (PAS ratings).
 
 ## Quick Start
 
