@@ -69,8 +69,12 @@ pce-sensitivity-dynamics/
 │   │   ├── plotFigure2_Neural.py       # Fig 2: GSP + scalp maps + 1/f exponent
 │   │   ├── computeAperiodicExponent.py # Per-(subj × bin) FOOOF exponent (Fig 2D)
 │   │   ├── fitExponentSensitivity.py   # S(x) fit + bootstrap CI on exponent peak
-│   │   ├── computePASCrossover.m       # PAS 4/3 logistic crossover stats
+│   │   ├── computePASCrossover.m       # PAS 4/3 logistic crossover + click-time/PAS Spearman
 │   │   ├── plotFigure3_Perceptual.m    # Fig 3: sensitivity + PAS
+│   │   ├── computeClickPAS.py          # Per-click click-time + PAS table (ClickPAS.csv)
+│   │   ├── computeEDAFreeLambda.py     # EDA exponential-vs-linear test (free-lambda, dR2)
+│   │   ├── computeWithinTrialComplexity.py  # Within-trial multichannel-LZc slope + spectral entropy
+│   │   ├── computeDecouplingBF.py      # Neural<->phenomenal decoupling Bayes factors
 │   │   ├── _eeg_io.py                  # Dataset + MNE loaders (Python pipeline)
 │   │   └── _exponent_common.py         # Shared constants for the exponent code
 │   └── preprocessing/                  # Data extraction pipelines
@@ -87,6 +91,7 @@ pce-sensitivity-dynamics/
 ├── data/
 │   ├── preprocessed/                   # Tracked in git (included in repo)
 │   │   ├── ClickTimes/                 # Behavioral responses
+│   │   ├── ClickPAS/                   # Per-click click time + PAS rating (derived; see computeClickPAS.py)
 │   │   ├── EDA/                        # Electrodermal activity (task + rest)
 │   │   ├── EEG/                        # Neural data (MAT files)
 │   │   └── Haptics/                    # Haptic feedback time series
@@ -112,7 +117,8 @@ The master script `reproduce.m` runs these steps in order:
 | 1g | `extractParietalHemispheres.m` | `data/preprocessed/EEG/parietal_hemisphere_data.mat` |
 | 1h | `computePerChannelFits.m` | `results/Figure2_perchannel_fits.csv` |
 | 1i | `computePASProportions.m` | `results/Figure3_pas_proportions.csv` |
-| 1j | `preprocessEEGForExponent.py` | `data/preprocessed/EEG/pceXX/pceXX_PY_task-raw.fif` (per dyad/participant; Python via MNE — minimal chain: bandpass 1–40 Hz [Nyquist alias safety + drift control] → resample 250 Hz → bad-channel LOF interp → average reference. The recording-level chain — 60 Hz notch, FCz common reference, 1000 Hz sample, 0.016–1000 Hz analog cutoff — is documented in Lerique et al. 2024.) |
+| 1j | `computeClickPAS.py` | `data/preprocessed/ClickPAS/ClickPAS.csv` (merges click times with the raw PAS questionnaires; needs `data/raw/Behavior/`) |
+| 1k | `preprocessEEGForExponent.py` | `data/preprocessed/EEG/pceXX/pceXX_PY_task-raw.fif` (per dyad/participant; Python via MNE — minimal chain: bandpass 1–40 Hz [Nyquist alias safety + drift control] → resample 250 Hz → bad-channel LOF interp → average reference. The recording-level chain — 60 Hz notch, FCz common reference, 1000 Hz sample, 0.016–1000 Hz analog cutoff — is documented in Lerique et al. 2024.) |
 
 ### Derived statistics
 
@@ -121,6 +127,11 @@ The master script `reproduce.m` runs these steps in order:
 | 2a | `computePerChannelFits.m`     | `results/Figure2_perchannel_fits.csv` |
 | 2b | `computeAperiodicExponent.py` | `results/aperiodic_exponent_per_participant{,_band-2-20}.csv` (per-(subj × bin) FOOOF aperiodic exponent on 2-40 Hz + 2-20 Hz EMG-reduced band) |
 | 2c | `fitExponentSensitivity.py`   | `results/aperiodic_exponent_within_trial.{csv,png,json}` (cohort mean ± SEM + S(x) fit + bootstrap peak CI; powers Panel D of Figure 2) |
+| 2d | `computeClickPAS.py`          | `data/preprocessed/ClickPAS/ClickPAS.csv` (per-click click time + PAS rating; merges `ClickResponseTimes.csv` with the raw PAS questionnaires — needs `data/raw/Behavior/`; bundled in the repo so the two PAS analyses below run without raw) |
+| 2e | `computePASCrossover.m`       | `results/Figure3_crossover_stats.csv` (adds the within-participant click-time/PAS **Spearman** `ρ=−0.12`, `t(57)=−2.77`, `p=0.008`, `N=58` alongside the crossover stats) |
+| 2f | `computeEDAFreeLambda.py`     | `results/eda_free_lambda.csv` (EDA exponential-vs-linear decisive test: free-`λ`≈2.62≈*e*, `ΔR²`=R²[exp@e]−R²[linear]=+0.07) |
+| 2g | `computeWithinTrialComplexity.py` | `results/within_trial_complexity_pertrial.csv` (per-trial multichannel-LZc slope `mc_slope`) + `results/within_trial_windows.csv` (per-window global `specent_global`) — from the cleaned `.fif` EEG; the compute-heavy step (~10 min) |
+| 2h | `computeDecouplingBF.py`      | `results/decoupling_bayes_factors.csv` (three neural↔phenomenal decoupling JZS Pearson Bayes factors: BF₁₀=0.17 [coupling, n=58], 0.25 [timing, n=25], 0.28 [magnitude, n=58] — all favor the null) |
 
 ### Manuscript figures
 

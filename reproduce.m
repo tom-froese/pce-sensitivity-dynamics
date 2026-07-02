@@ -51,8 +51,10 @@ if fromRaw
     runStep(prepDir, 'extractAllChannels',            '1f', 'Extracting all 64 EEG channels');
     runStep(prepDir, 'computePerChannelFits',         '1h', 'Computing per-channel sensitivity fits');
     runStep(prepDir, 'computePASProportions',         '1i', 'Computing PAS proportions');
-    runStep(anaDir,  'computePASCrossover',           '1j', 'Computing PAS crossover statistics');
-    runPythonStep(fullfile(prepDir, 'preprocessEEGForExponent.py'), '1k --all', ...
+    runStep(anaDir,  'computePASCrossover',           '1j', 'Computing PAS crossover + click-time/PAS Spearman statistics');
+    runPythonStep(fullfile(anaDir, 'computeClickPAS.py'), '1k', ...
+                  'Building the per-click ClickPAS table');
+    runPythonStep(fullfile(prepDir, 'preprocessEEGForExponent.py'), '1l --all', ...
                   'Preprocessing 250 Hz cleaned EEG for the aperiodic-exponent analysis');
 
     fprintf('\n  Step 1 complete.\n\n');
@@ -68,6 +70,7 @@ else
         'data/preprocessed/EEG/globalScalpPotential_stats.mat'
         'data/preprocessed/EEG/allchannel_data.mat'
         'data/preprocessed/EEG/pce01/pce01_P1_task-raw.fif'
+        'data/preprocessed/ClickPAS/ClickPAS.csv'
         'results/Figure3_pas_proportions.csv'
         'results/Figure3_crossover_stats.csv'
     };
@@ -111,6 +114,15 @@ runPythonStep(fullfile(anaDir, 'plotFigure2_Neural.py'), '3b', 'Figure 2: Neural
 runStep(anaDir, 'plotFigure3_Perceptual', '3c', 'Figure 3: Perceptual evidence');
 runPythonStep(fullfile(anaDir, 'plotFigConcept_Sensitivity.py'), '3e', ...
               'Sensitivity-framework concept figure (R(x), S(x) curves)');
+
+fprintf('\n--- Step 4: Derived statistics beyond the figures ---\n');
+
+runPythonStep(fullfile(anaDir, 'computeEDAFreeLambda.py'), '4a', ...
+              'EDA exponential-vs-linear test (free-lambda ~ 2.62, dR2 = +0.07)');
+runPythonStep(fullfile(anaDir, 'computeWithinTrialComplexity.py'), '4b', ...
+              'Within-trial neural complexity (multichannel LZc slope + spectral entropy)');
+runPythonStep(fullfile(anaDir, 'computeDecouplingBF.py'), '4c', ...
+              'Neural<->phenomenal decoupling Bayes factors (0.17, 0.25, 0.28)');
 
 fprintf('\n=============================================\n');
 fprintf('  Done. Figures saved to results/\n');

@@ -209,13 +209,49 @@ fprintf('  Early PAS=4: %.3f,  Late: %.3f\n', mean(pE), mean(pL));
 fprintf('  t(%d) = %.2f, p = %.4f, d_z = %.3f\n\n', nEL-1, stats_el.tstat, p_el, dz);
 
 %% ========================================================================
-%  7. SAVE RESULTS
+%  7. WITHIN-PARTICIPANT CLICK-TIME / PAS SPEARMAN CORRELATION
+%  ========================================================================
+%  Per participant (>= 4 clicks), the Spearman correlation between click
+%  time and PAS rating (all ratings, not just 3/4); then a one-sample
+%  t-test of the per-participant rho's against 0. Negative rho = subjective
+%  clarity declines as the trial unfolds. Paper: rho = -0.12, t(57) = -2.77,
+%  p = 0.008, N = 58.
+
+uPartsSp = unique(merged.PartID);
+partRho  = nan(length(uPartsSp), 1);
+
+for pi = 1:length(uPartsSp)
+    mask = merged.PartID == uPartsSp(pi);
+    ct   = merged.ClickTime(mask);
+    pas  = merged.PAS(mask);
+    if length(ct) < 4, continue; end          % require >= 4 clicks
+    if numel(unique(pas)) < 2 || numel(unique(ct)) < 2
+        continue;                              % rho undefined for a constant input
+    end
+    partRho(pi) = corr(ct, pas, 'Type', 'Spearman');
+end
+
+validRho = ~isnan(partRho);
+rhoVals  = partRho(validRho);
+nRho     = numel(rhoVals);
+
+rho_mean = mean(rhoVals);
+[~, p_rho, ~, stats_rho] = ttest(rhoVals);     % one-sample t-test vs 0
+t_rho    = stats_rho.tstat;
+
+fprintf('=== WITHIN-PARTICIPANT CLICK-TIME / PAS SPEARMAN (N = %d) ===\n', nRho);
+fprintf('  mean rho = %.4f\n', rho_mean);
+fprintf('  t(%d) = %.4f, p = %.4f\n\n', nRho-1, t_rho, p_rho);
+
+%% ========================================================================
+%  8. SAVE RESULTS
 %  ========================================================================
 
 results = table( ...
     TAU_LOCKED, tPeak, height(m34), b0, b1, tcross_trial, p_b1, ...
     nValid, cross_mean, cross_median, cross_sem, ci_lo, ci_hi, pWilcox, ...
     nEL, mean(pE), mean(pL), stats_el.tstat, p_el, dz, ...
+    nRho, rho_mean, t_rho, p_rho, ...
     'VariableNames', { ...
     'tau_locked', 'tPeak', 'n_trials_34', ...
     'trial_beta0', 'trial_beta1', 'trial_crossover_s', 'trial_beta1_p', ...
@@ -223,7 +259,8 @@ results = table( ...
     'within_part_sem_s', 'within_part_ci_lo_s', 'within_part_ci_hi_s', ...
     'wilcoxon_beta1_p', ...
     'n_early_late', 'early_pas4_prop', 'late_pas4_prop', ...
-    'early_late_t', 'early_late_p', 'early_late_dz'});
+    'early_late_t', 'early_late_p', 'early_late_dz', ...
+    'n_spearman', 'spearman_rho_mean', 'spearman_t', 'spearman_p'});
 
 outFile = fullfile(resDir, 'Figure3_crossover_stats.csv');
 writetable(results, outFile);

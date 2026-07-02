@@ -145,6 +145,14 @@ def main():
            f"d_z={xo['early_late_dz']:.3f}")
     c.cond("PAS within-trial slope significant", xo["trial_beta1_p"] < 1e-3,
            f"beta1 p={xo['trial_beta1_p']:.2g}")
+    # Within-participant click-time/PAS Spearman (rho=-0.12, t(57)=-2.77, p=0.008, N=58)
+    if "spearman_rho_mean" in xo.index:
+        c.near("PAS Spearman rho", xo["spearman_rho_mean"], -0.12, 0.02)
+        c.near("PAS Spearman t-stat", xo["spearman_t"], -2.77, 0.15)
+        c.cond("PAS Spearman significant", xo["spearman_p"] < 0.05,
+               f"p={xo['spearman_p']:.4g}")
+        c.cond("PAS Spearman N == 58", int(round(xo["n_spearman"])) == 58,
+               f"N={xo['n_spearman']:g}")
 
     # --- Aperiodic 1/f exponent S(x) fit ------------------------------------
     with open(os.path.join(results, "aperiodic_exponent_within_trial.json")) as fh:
@@ -159,6 +167,30 @@ def main():
            f"CI={boot['ci95']}")
     c.cond("Aperiodic population inverted-U", curv["t"] < -2.0 and curv["p"] < 0.01,
            f"t={curv['t']:.2f}, p={curv['p']:.2g}")
+
+    # --- EDA exponential-vs-linear decisive test ----------------------------
+    # (free-lambda ~ 2.62 ~ e; dR2 = R2[exp@e] - R2[linear] = +0.07). Written by
+    # computeEDAFreeLambda.py; checked only if present.
+    eda_csv = os.path.join(results, "eda_free_lambda.csv")
+    if os.path.isfile(eda_csv):
+        eda = pd.read_csv(eda_csv).iloc[0]
+        c.near("EDA free lambda ~ e", eda["free_lambda"], E, 0.30)
+        c.near("EDA dR2 (exp@e - linear)", eda["delta_R2_exp_minus_linear"], 0.07, 0.02)
+        c.cond("EDA exp beats linear", eda["R2_exp_at_e"] > eda["R2_linear"],
+               f"R2[exp@e]={eda['R2_exp_at_e']:.3f} > R2[lin]={eda['R2_linear']:.3f}")
+
+    # --- Neural<->phenomenal decoupling Bayes factors -----------------------
+    # (all BF10 < 1/3 = positive evidence for the null). Written by
+    # computeDecouplingBF.py; checked only if present.
+    bf_csv = os.path.join(results, "decoupling_bayes_factors.csv")
+    if os.path.isfile(bf_csv):
+        bf = pd.read_csv(bf_csv).set_index("test")
+        c.near("Decoupling BF coupling (n=58)", bf.loc["coupling", "BF10"], 0.17, 0.03)
+        c.near("Decoupling BF timing (n=25)", bf.loc["step_coupling_timing", "BF10"], 0.25, 0.03)
+        c.near("Decoupling BF magnitude (n=58)", bf.loc["step_coupling_magnitude", "BF10"], 0.28, 0.03)
+        c.cond("Decoupling BFs all favor null",
+               (bf["BF10"] < 1 / 3).all(),
+               f"max BF10={bf['BF10'].max():.3f} < 0.333")
 
     ok = c.report()
     return 0 if ok else 1

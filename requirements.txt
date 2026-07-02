@@ -12,6 +12,11 @@ matplotlib>=3.7
 # EEG preprocessing + analysis
 mne>=1.6                # Raw I/O, filtering, montages, topomap, LOF bad-channel detection
 fooof>=1.1              # 1/f aperiodic-exponent fits (FOOOF "specparam" toolbox)
+antropy>=0.1.6          # Lempel-Ziv complexity + spectral entropy (within-trial complexity)
+
+# Derived statistics (decoupling Bayes factors + within-participant tests)
+statsmodels>=0.14       # per-participant logistic PAS 4->3 crossover (GLM)
+pingouin>=0.5           # JZS Pearson Bayes factors (neural<->phenomenal decoupling)
 
 # Validation
 h5py>=3.8               # read MATLAB v7.3 (HDF5) stats .mat in validate_reproduction.py

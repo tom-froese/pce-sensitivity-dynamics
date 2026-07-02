@@ -71,10 +71,13 @@ if $FROM_RAW; then
     echo "  [1i] Computing PAS proportions (unsmoothed)..."
     matlab -batch "cd('code/preprocessing'); computePASProportions"
 
-    echo "  [1j] Computing PAS crossover statistics..."
+    echo "  [1j] Computing PAS crossover + click-time/PAS Spearman statistics..."
     matlab -batch "cd('code/analysis'); computePASCrossover"
 
-    echo "  [1k] Preprocessing 250 Hz cleaned EEG for the aperiodic-exponent analysis..."
+    echo "  [1k] Building the per-click ClickPAS table (click time + PAS per click)..."
+    python3 code/analysis/computeClickPAS.py
+
+    echo "  [1l] Preprocessing 250 Hz cleaned EEG for the aperiodic-exponent analysis..."
     python3 code/preprocessing/preprocessEEGForExponent.py --all
 
     echo "  Step 1 complete."
@@ -92,6 +95,7 @@ else
         data/preprocessed/EEG/globalScalpPotential_stats.mat \
         data/preprocessed/EEG/allchannel_data.mat \
         data/preprocessed/EEG/pce01/pce01_P1_task-raw.fif \
+        data/preprocessed/ClickPAS/ClickPAS.csv \
         results/Figure2_perchannel_fits.csv \
         results/Figure3_pas_proportions.csv \
         results/Figure3_crossover_stats.csv; do
@@ -143,6 +147,26 @@ matlab -batch "cd('code/analysis'); plotFigure3_Perceptual"
 
 echo "  [2f] Sensitivity-framework concept figure (R(x), S(x) curves)..."
 python3 code/analysis/plotFigConcept_Sensitivity.py
+
+# ------------------------------------------------------------------
+# STEP 3: Derived statistics beyond the figures
+# ------------------------------------------------------------------
+# Three quantities the manuscript cites in text/SI that are not read off a
+# figure. Each writes a small results/ sidecar CSV.
+echo ""
+echo "--- Step 3: Derived statistics ---"
+
+echo "  [3a] EDA exponential-vs-linear test (free-lambda ~ 2.62, dR2 = +0.07)..."
+python3 code/analysis/computeEDAFreeLambda.py
+
+# The neural<->phenomenal decoupling Bayes factors need per-window/per-trial
+# neural complexity from the cleaned .fif EEG. This is the compute-heavy step
+# (multichannel Lempel-Ziv over every within-trial window; ~10 min on all dyads).
+echo "  [3b] Within-trial neural complexity (multichannel LZc slope + spectral entropy)..."
+python3 code/analysis/computeWithinTrialComplexity.py
+
+echo "  [3c] Neural<->phenomenal decoupling Bayes factors (BF10 = 0.17, 0.25, 0.28)..."
+python3 code/analysis/computeDecouplingBF.py
 
 echo ""
 echo "============================================="

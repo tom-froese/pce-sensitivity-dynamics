@@ -1,0 +1,2 @@
+n_trials,tau_s,T_s,win_s,step_s,seg_lo_s,seg_hi_s,R2_exp_at_e,R2_linear,delta_R2_exp_minus_linear,free_lambda,free_lambda_se,R2_free
+1098,3.9,60.0,4.0,2.0,2.0,58.0,0.9739180772156986,0.9037495698032798,0.07016850741241876,2.6269874542095057,0.3093645988189336,0.9739898249386815
