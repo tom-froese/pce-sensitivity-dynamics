@@ -32,10 +32,8 @@
 %                           baseline-corrected median time courses (task)
 %     - restParticipantTC:  [nParticipants x nSampRest] (rest)
 %     - participantInfo:    table with DyadID, ParticipantID, nTrials, etc.
-%     - roiParticipantTC:   {nROI x 1} cell, each [nPart x nSampTask]
 %     - tTask, tRest:       time vectors (s)
 %     - cfg:                configuration struct
-%     - roi:                ROI definitions
 %
 % USAGE:
 %   Run from the Matlab scripts directory, or set paths in cfg below.
@@ -81,18 +79,14 @@ fprintf('  Baseline:          [0, %.1f) s\n', cfg.baselineEnd);
 fprintf('==========================================================\n\n');
 
 %% ========================================================================
-%  2. ROI DEFINITIONS (64-channel extended 10-10 montage)
+%  2. CHANNEL MONTAGE (64-channel 10-10 layout)
 %  ========================================================================
-%  Channel order in the raw .mat files follows the actiCAP snap layout.
-%  We define ROIs by label and map to hardware indices below.
-
 % Full 64-channel label order MATCHING THE RAW .mat FILE ROWS.
 % CORRECTED 2026-07-13 (montage bug) — see extractAllChannels.m header +
 % pce-master-loop docs/2026-07-13-montage-cap-provenance.md. The .mat rows are in
 % the .ced ANATOMICAL order with AFz/Iz (not the actiCAP-default order with
-% PO9/PO10). The channel-MEAN GSP (Panel A/B, taskParticipantTC) is
-% permutation-invariant so its values were unaffected; the per-ROI breakdown
-% below WAS affected (ROI->row mapping) and is corrected by this fix.
+% PO9/PO10). The channel-MEAN GSP is permutation-invariant so its values are
+% unaffected; the label order is kept correct here for the guardrail + clarity.
 cfg.chanLabels = { ...
     'Fp1','Fp2','AF7','AF3','AFz','AF4','AF8','F7', ...
     'F5','F3','F1','Fz','F2','F4','F6','F8', ...
@@ -108,35 +102,8 @@ assert(any(strcmp(cfg.chanLabels,'AFz')) && any(strcmp(cfg.chanLabels,'Iz')) && 
        numel(cfg.chanLabels)==64, 'preprocessGSP:badMontage', ...
        'chanLabels must be the .ced anatomical order with AFz/Iz (not PO9/PO10).');
 
-roi.names  = {'Prefrontal','Frontal','Fronto-Central','Central', ...
-              'Centro-Parietal','Parietal','Occipital'};
-roi.chans  = { ...
-    {'Fp1','Fp2','AF3','AF4','AF7','AF8','AFz'}, ...
-    {'F7','F3','Fz','F4','F8','F1','F2','F5','F6'}, ...
-    {'FC5','FC1','FC2','FC6','FC3','FC4','FT7','FT8','FT9','FT10'}, ...
-    {'C3','Cz','C4','C1','C2','C5','C6','T7','T8'}, ...
-    {'CP5','CP1','CP2','CP6','CP3','CP4','CPz','TP7','TP8','TP9','TP10'}, ...
-    {'P7','P3','Pz','P4','P8','P1','P2','P5','P6'}, ...
-    {'O1','Oz','O2','PO3','PO4','PO7','PO8','POz','Iz'} ...  % PO9/PO10 -> Iz (this cap's real occipital set)
-};
-nROI = length(roi.names);
-
-% Map ROI channel labels to row indices in the 64-channel raw data
-roi.indices = cell(nROI, 1);
-for ri = 1:nROI
-    idx = [];
-    for ci = 1:length(roi.chans{ri})
-        match = find(strcmp(cfg.chanLabels, roi.chans{ri}{ci}));
-        if ~isempty(match)
-            idx = [idx, match]; %#ok<AGROW>
-        else
-            warning('Channel %s not found in chanLabels', roi.chans{ri}{ci});
-        end
-    end
-    roi.indices{ri} = idx;
-    fprintf('  ROI %-18s: %2d channels\n', roi.names{ri}, length(idx));
-end
-fprintf('\n');
+% (Per-ROI anterior-posterior analysis removed 2026-07-14 — not used in the
+% manuscript; only the 64-channel-mean global scalp potential is reported.)
 
 %% ========================================================================
 %  3. SETUP
@@ -182,13 +149,10 @@ fprintf('Found %d dyad folders (excluding dyad %d)\n\n', nDyads, cfg.excludeDyad
 %    - Load all trial files, downsample to 10 Hz, compute global mean
 %    - Take MEDIAN across trials -> robust participant-level time course
 %    - Baseline-correct: subtract mean of [0, 2) s
-%    - Also compute per-ROI averages
 
 % Pre-allocate storage
 taskGlobal   = {};   % will become [nPart x nSampTask]
 restGlobal   = {};   % will become [nPart x nSampRest]
-taskROI      = cell(nROI, 1);  % {roi}{partIdx} -> vec
-for ri = 1:nROI, taskROI{ri} = {}; end
 
 partInfo = table('Size', [0 5], ...
     'VariableTypes', {'double','double','double','double','double'}, ...
@@ -207,10 +171,6 @@ for di = 1:nDyads
 
         % --- Load all TASK trials ---
         trialVecs = nan(length(cfg.trials), nSampTask);  % global
-        roiVecs   = cell(nROI, 1);
-        for ri = 1:nROI
-            roiVecs{ri} = nan(length(cfg.trials), nSampTask);
-        end
         nLoaded = 0;
 
         for ti = 1:length(cfg.trials)
@@ -237,11 +197,6 @@ for di = 1:nDyads
                 % Global: mean across all 64 channels
                 trialVecs(ti, 1:nOut) = mean(ds(:, 1:nOut), 1);
 
-                % Per ROI: mean across ROI channels
-                for ri = 1:nROI
-                    roiVecs{ri}(ti, 1:nOut) = mean(ds(roi.indices{ri}, 1:nOut), 1);
-                end
-
                 nLoaded = nLoaded + 1;
             catch ME
                 fprintf('[ERR:%s] ', ME.message);
@@ -261,13 +216,6 @@ for di = 1:nDyads
         pGlobal = pGlobal - mean(pGlobal(blIdx), 'omitnan');
 
         taskGlobal{end+1} = pGlobal; %#ok<SAGROW>
-
-        % Per ROI
-        for ri = 1:nROI
-            rMed = median(roiVecs{ri}, 1, 'omitnan');
-            rMed = rMed - mean(rMed(blIdx), 'omitnan');
-            taskROI{ri}{end+1} = rMed;
-        end
 
         % --- Load REST blocks ---
         restVecs = [];
@@ -324,11 +272,6 @@ else
     restParticipantTC = [];
 end
 
-roiParticipantTC = cell(nROI, 1);
-for ri = 1:nROI
-    roiParticipantTC{ri} = vertcat(taskROI{ri}{:});
-end
-
 fprintf('\n=== EXTRACTION COMPLETE ===\n');
 fprintf('  Participants (task):  %d\n', nPart);
 fprintf('  Participants (rest):  %d\n', size(restParticipantTC, 1));
@@ -342,9 +285,9 @@ fprintf('  Elapsed:              %.1f min\n', elapsedMin);
 outputFile = fullfile(cfg.outputDir, 'globalScalpPotential_data.mat');
 save(outputFile, ...
     'taskParticipantTC', 'restParticipantTC', ...
-    'roiParticipantTC', 'partInfo', ...
+    'partInfo', ...
     'tTask', 'tRest', 'nSampTask', 'nSampRest', ...
-    'cfg', 'roi', 'nROI', 'nPart', ...
+    'cfg', 'nPart', ...
     '-v7.3');
 fprintf('  Saved: %s\n', outputFile);
 fprintf('  Matrix size (task): %d x %d\n', size(taskParticipantTC));

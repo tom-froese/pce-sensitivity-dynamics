@@ -303,9 +303,13 @@ ax_b.legend(loc='upper right', frameon=False, fontsize=7.5)
 # else, and we make no per-channel magnitude prediction (the absolute trough
 # amplitude is baseline-confounded under the minimal GSP preprocessing).
 ax_topo = fig.add_subplot(gs_bot_left[0, 0])
+# Full-head interpolation + data-range colour scaling (not fixed 0-1): the field is
+# a smooth, coherent scalp map, so we let the colour span the actual R² range and
+# fill the whole head (default 'head' extrapolation) rather than clipping to sensors.
 im_r2, _ = mne.viz.plot_topomap(
     R2_lock_all, info_all, axes=ax_topo, show=False, cmap='viridis',
-    vlim=(0, 1), contours=6, sensors=True, extrapolate='local',
+    vlim=(float(np.min(R2_lock_all)), float(np.max(R2_lock_all))),
+    contours=4, sensors=True, extrapolate='head',
 )
 ax_topo.set_title(r'$R^2$ of the locked-$\tau$ $S(x)$ fit per channel'
                   '\n' r'($\lambda = e$, $\tau = 4$ s)', pad=6, fontsize=9)

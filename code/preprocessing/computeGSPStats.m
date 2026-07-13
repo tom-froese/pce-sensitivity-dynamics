@@ -60,12 +60,9 @@ D = load(dataFile);
 
 taskTC   = D.taskParticipantTC;   % [nPart x nSampTask]
 restTC   = D.restParticipantTC;   % [nPartRest x nSampRest]
-roiTC    = D.roiParticipantTC;    % {nROI x 1} cell
 tTask    = D.tTask;
 tRest    = D.tRest;
 cfg      = D.cfg;
-roi      = D.roi;
-nROI     = D.nROI;
 nPart    = D.nPart;
 
 fprintf('  Participants: %d\n', nPart);
@@ -279,95 +276,6 @@ else
 end
 
 %% ========================================================================
-%  8. ROI ANALYSIS
-%  ========================================================================
-
-fprintf('\n--- ROI-Level Per-Participant Sensitivity Fits ---\n');
-fprintf('%-18s  Mean_R2   SD_R2    t(%d)     p_t        d_z     Mean_Tr    SD_Tr\n', ...
-    'ROI', df);
-fprintf('%s\n', repmat('-', 1, 95));
-
-roiPartR2     = cell(nROI, 1);
-roiPartTrough = cell(nROI, 1);
-roiPartA      = cell(nROI, 1);
-roiPartTau    = cell(nROI, 1);
-roiPartFits   = cell(nROI, 1);
-roiPartSmTC   = cell(nROI, 1);
-
-roiGrandR2     = nan(nROI, 1);
-roiGrandTau    = nan(nROI, 1);
-roiGrandTrough = nan(nROI, 1);
-roiGrandA      = nan(nROI, 1);
-roiGrandB      = nan(nROI, 1);
-roiGrandFit    = nan(nROI, nSampSm);
-roiGrandSm     = nan(nROI, nSampSm);
-
-for ri = 1:nROI
-    rTC = roiTC{ri};      % [nPart x nSampTask]
-    nP  = size(rTC, 1);
-
-    rR2     = nan(nP, 1);
-    rTrough = nan(nP, 1);
-    rA      = nan(nP, 1);
-    rTau    = nan(nP, 1);
-    rFits   = nan(nP, nSampSm);
-    rSmTC   = nan(nP, nSampSm);
-
-    for pi = 1:nP
-        sm = conv(rTC(pi,:), kernel, 'valid');
-        rSmTC(pi,:) = sm;    % raw smoothed (no inversion)
-
-        [yFit, R2, tau, A] = fitSensitivity_gsp(tTaskSm, sm, lambda);
-        rR2(pi)     = R2;
-        rTau(pi)    = tau;
-        rA(pi)      = A;
-        rFits(pi,:) = yFit;
-
-        [~, trIdx] = min(yFit);   % trough (A < 0)
-        rTrough(pi) = tTaskSm(trIdx);
-    end
-
-    roiPartR2{ri}     = rR2;
-    roiPartTrough{ri} = rTrough;
-    roiPartA{ri}      = rA;
-    roiPartTau{ri}    = rTau;
-    roiPartFits{ri}   = rFits;
-    roiPartSmTC{ri}   = rSmTC;
-
-    % Group stats for this ROI
-    [~, pval, ~, s] = ttest(rR2, 0, 'Tail', 'right');
-    dz = mean(rR2) / std(rR2);
-
-    fprintf('%-18s  %.4f    %.4f   %+6.3f    %-10s  %+.3f   %.1f s      %.1f s\n', ...
-        roi.names{ri}, mean(rR2), std(rR2), s.tstat, ...
-        formatP(pval), dz, mean(rTrough), std(rTrough));
-
-    % Grand average for ROI (no inversion)
-    rGrand    = median(rTC, 1, 'omitnan');
-    rGrand_sm = conv(rGrand, kernel, 'valid');
-    [rGFit, rGR2, rGTau, rGA, rGB] = fitSensitivity_gsp(tTaskSm, rGrand_sm, lambda);
-
-    roiGrandR2(ri)      = rGR2;
-    roiGrandTau(ri)     = rGTau;
-    roiGrandA(ri)       = rGA;
-    roiGrandB(ri)       = rGB;
-    roiGrandFit(ri,:)   = rGFit;
-    roiGrandSm(ri,:)    = rGrand_sm;
-
-    [~, trIdx] = min(rGFit);   % trough (A < 0)
-    roiGrandTrough(ri) = tTaskSm(trIdx);
-end
-
-fprintf('\n--- Grand-Average ROI Fits ---\n');
-fprintf('%-18s  R2_grand  Tau(s)  Trough(s)  A         B\n', 'ROI');
-fprintf('%s\n', repmat('-', 1, 70));
-for ri = 1:nROI
-    fprintf('%-18s  %.4f    %.1f     %.1f        %+.4f    %+.4f\n', ...
-        roi.names{ri}, roiGrandR2(ri), roiGrandTau(ri), ...
-        roiGrandTrough(ri), roiGrandA(ri), roiGrandB(ri));
-end
-
-%% ========================================================================
 %  9. SAVE ALL RESULTS
 %  ========================================================================
 
@@ -378,12 +286,8 @@ save(outputFile, ...
     'grandMedianSm', 'grandFit', 'grandR2', 'grandTau', 'grandTrough', 'grandA', 'grandB', ...
     'nullR2', 'pPerm', 'nPerm', ...
     'restR2', 'grandRestR2', 'tRestSm', 'grandRestSm', 'grandRestFit', ...
-    'roiPartR2', 'roiPartTrough', 'roiPartA', 'roiPartTau', ...
-    'roiPartFits', 'roiPartSmTC', ...
-    'roiGrandR2', 'roiGrandTau', 'roiGrandTrough', 'roiGrandA', 'roiGrandB', ...
-    'roiGrandFit', 'roiGrandSm', ...
     'tTaskSm', 'smoothWin_s', 'lambda', ...
-    'cfg', 'roi', 'nROI', 'nPart', ...
+    'cfg', 'nPart', ...
     '-v7.3');
 
 fprintf('\nSaved: %s\n', outputFile);
@@ -410,11 +314,6 @@ if ~isempty(restR2)
     fprintf('\n  REST CONTROL:\n');
     fprintf('    Grand rest R² = %.4f\n', grandRestR2);
     fprintf('    Per-participant rest R²: M=%.3f, SD=%.3f\n', mean(restR2), std(restR2));
-end
-fprintf('\n  ROI SUMMARY (grand-average R²):\n');
-for ri = 1:nROI
-    fprintf('    %-18s  R² = %.4f, trough = %.1f s\n', ...
-        roi.names{ri}, roiGrandR2(ri), roiGrandTrough(ri));
 end
 fprintf('==========================================================\n');
 fprintf('Done.\n');
