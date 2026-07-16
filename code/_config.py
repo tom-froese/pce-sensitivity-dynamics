@@ -33,18 +33,34 @@ TRIALS = tuple(range(1, 19))
 EXCLUDE_DYADS = (31,)
 
 # 64-channel actiCAP label order = row order of the raw .mat matrices.
-# Same list as the existing MATLAB scripts (preprocessGSP.m, extractAllChannels.m).
+# This is the dataset's .ced ANATOMICAL montage (AFz/Iz) — NOT the BrainProducts
+# manufacturer-default template (PO9/PO10). The default was wrong in ORDER (61/64 rows)
+# and MEMBERSHIP (PO9/PO10 vs the cap's real AFz/Iz), which scrambled every per-channel /
+# topographic label built from these names (e.g. the Zenodo *_task-raw.fif). Verified end
+# to end against the raw BrainVision montage CMA-64_REF_HS2.bvef + blink physiology (AFz).
+# Kept in lockstep with the MATLAB scripts (preprocessGSP.m, extractAllChannels.m), which
+# were corrected 2026-07-13 (commit 5e18466). See
+# pce-master-loop/docs/2026-07-13-montage-cap-provenance.md.
 CH_NAMES = [
-    "Fp1", "Fp2", "F7", "F3", "Fz", "F4", "F8", "FC5",
-    "FC1", "FC2", "FC6", "T7", "C3", "Cz", "C4", "T8",
-    "TP9", "CP5", "CP1", "CP2", "CP6", "TP10", "P7", "P3",
-    "Pz", "P4", "P8", "PO9", "O1", "Oz", "O2", "PO10",
-    "AF7", "AF3", "AF4", "AF8", "F5", "F1", "F2", "F6",
-    "FT9", "FT7", "FC3", "FC4", "FT8", "FT10", "C5", "C1",
-    "C2", "C6", "TP7", "CP3", "CPz", "CP4", "TP8", "P5",
-    "P1", "P2", "P6", "PO7", "PO3", "POz", "PO4", "PO8",
+    "Fp1", "Fp2", "AF7", "AF3", "AFz", "AF4", "AF8", "F7",
+    "F5", "F3", "F1", "Fz", "F2", "F4", "F6", "F8",
+    "FT9", "FT7", "FC5", "FC3", "FC1", "FC2", "FC4", "FC6",
+    "FT8", "FT10", "T7", "C5", "C3", "C1", "Cz", "C2",
+    "C4", "C6", "T8", "TP9", "TP7", "CP5", "CP3", "CP1",
+    "CPz", "CP2", "CP4", "CP6", "TP8", "TP10", "P7", "P5",
+    "P3", "P1", "Pz", "P2", "P4", "P6", "P8", "PO7",
+    "PO3", "POz", "PO4", "PO8", "O1", "Oz", "O2", "Iz",
 ]
 assert len(CH_NAMES) == N_CHAN
+# GUARDRAIL: this cap recorded AFz/Iz, never PO9/PO10 — fail loud if the order ever
+# regresses to a manufacturer-default template (mirrors the extractAllChannels.m assert).
+assert (
+    "AFz" in CH_NAMES and "Iz" in CH_NAMES
+    and "PO9" not in CH_NAMES and "PO10" not in CH_NAMES
+), (
+    "CH_NAMES must be the .ced anatomical order with AFz/Iz (not PO9/PO10). "
+    "See pce-master-loop/docs/2026-07-13-montage-cap-provenance.md."
+)
 
 # --- Preprocessing (moderate cleaning, no ICA) -------------------------
 MONTAGE = "standard_1005"
