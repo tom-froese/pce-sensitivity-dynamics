@@ -4,7 +4,7 @@ Code and data for:
 
 > **Clock-free optimal stopping in decision-making: Stochastic sensitivity dynamics predict behavioral, neural, and perceptual transition timing**
 >
-> Tom Froese (2026). *Under review.*
+> Tom Froese (2026). *In preparation* (aimed at *npj Complexity*).
 
 ## Overview
 
